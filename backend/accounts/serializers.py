@@ -11,6 +11,11 @@ class UserRegisterSerializer(serializers.ModelSerializer):
         fields = ['id', 'email', 'full_name', 'password', 'role']
         extra_kwargs = {'password': {'write_only': True}}
 
+    def validate_role(self, value):
+        if value not in ['STUDENT', 'INSTRUCTOR']:
+            raise serializers.ValidationError("Role must be STUDENT or INSTRUCTOR")
+        return value
+
     def create(self, validated_data):
         validated_data['password'] = make_password(validated_data['password'])
         return super().create(validated_data)
@@ -22,7 +27,8 @@ class UserProfileSerializer(serializers.ModelSerializer):
         model = User
         fields = ['id', 'email', 'full_name', 'role', 'is_active', 'is_staff', 'created_at']
 
-# User Serializer
+
+# 3️⃣ General User Serializer
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User

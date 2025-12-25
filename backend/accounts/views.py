@@ -2,20 +2,23 @@ from rest_framework import generics, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.authtoken.models import Token
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, AllowAny
 from django.contrib.auth import authenticate, get_user_model
 from .serializers import UserRegisterSerializer, UserProfileSerializer, UserSerializer
 from .permissions import IsAdmin 
 
 User = get_user_model()
 
-# 1️⃣ Registration API
+# 1️⃣ Registration API (public)
 class RegisterUserView(generics.CreateAPIView):
     queryset = User.objects.all()
     serializer_class = UserRegisterSerializer
+    permission_classes = [AllowAny]  # <--- allow anyone to register
 
-# 2️⃣ Login API
+# 2️⃣ Login API (public)
 class LoginUserView(APIView):
+    permission_classes = [AllowAny]  # <--- allow anyone to login
+
     def post(self, request):
         email = request.data.get('email')
         password = request.data.get('password')
@@ -25,16 +28,15 @@ class LoginUserView(APIView):
             return Response({'token': token.key})
         return Response({'error': 'Invalid credentials'}, status=status.HTTP_401_UNAUTHORIZED)
 
-# 3️⃣ Profile API
-from rest_framework.permissions import IsAuthenticated
+# 3️⃣ Profile API (authenticated)
 class UserProfileView(generics.RetrieveAPIView):
     serializer_class = UserProfileSerializer
     permission_classes = [IsAuthenticated]
 
     def get_object(self):
         return self.request.user
-    
-# list of students
+
+# 4️⃣ List of students (admin only)
 class StudentListView(generics.ListAPIView):
     serializer_class = UserSerializer
     permission_classes = [IsAuthenticated, IsAdmin]
@@ -42,7 +44,7 @@ class StudentListView(generics.ListAPIView):
     def get_queryset(self):
         return User.objects.filter(role='STUDENT')
 
-# list of instructors
+# 5️⃣ List of instructors (admin only)
 class InstructorListView(generics.ListAPIView):
     serializer_class = UserSerializer
     permission_classes = [IsAuthenticated, IsAdmin]
