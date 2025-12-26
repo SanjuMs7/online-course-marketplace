@@ -17,7 +17,7 @@ class RegisterUserView(generics.CreateAPIView):
 
 # 2️⃣ Login API (public)
 class LoginUserView(APIView):
-    permission_classes = [AllowAny]  # <--- allow anyone to login
+    permission_classes = [AllowAny]
 
     def post(self, request):
         email = request.data.get('email')
@@ -25,8 +25,15 @@ class LoginUserView(APIView):
         user = authenticate(request, email=email, password=password)
         if user:
             token, _ = Token.objects.get_or_create(user=user)
-            return Response({'token': token.key})
+            user_data = {
+                'id': user.id,
+                'email': user.email,
+                'full_name': user.full_name,
+                'role': user.role
+            }
+            return Response({'token': token.key, 'user': user_data})
         return Response({'error': 'Invalid credentials'}, status=status.HTTP_401_UNAUTHORIZED)
+
 
 # 3️⃣ Profile API (authenticated)
 class UserProfileView(generics.RetrieveAPIView):
