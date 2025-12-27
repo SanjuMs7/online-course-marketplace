@@ -8,6 +8,16 @@ export default function Courses() {
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
+  const getThumbnailUrl = (thumbnailPath) => {
+    if (!thumbnailPath) return null;
+    // If it's already a full URL, return it
+    if (thumbnailPath.startsWith('http://') || thumbnailPath.startsWith('https://')) {
+      return thumbnailPath;
+    }
+    // Otherwise, construct the full URL
+    return `http://localhost:8000${thumbnailPath}`;
+  };
+
   const fetchCourses = async () => {
     try {
       const response = await getCourses();
@@ -89,10 +99,23 @@ export default function Courses() {
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {courses.map(course => (
-            <article key={course.id} className="bg-white rounded-lg shadow-sm overflow-hidden flex flex-col">
+            <article key={course.id} className="bg-white rounded-lg shadow-sm overflow-hidden flex flex-col relative">
+              {course.is_enrolled && (
+                <div className="absolute top-2 right-2 z-10 bg-green-500 text-white px-3 py-1 rounded-full text-xs font-semibold shadow-md">
+                  Enrolled
+                </div>
+              )}
               <div className="h-40 bg-gradient-to-r from-indigo-50 to-white border-b border-gray-100">
                 {course.thumbnail ? (
-                  <img src={course.thumbnail} alt={course.title} className="w-full h-40 object-cover" />
+                  <img 
+                    src={getThumbnailUrl(course.thumbnail)} 
+                    alt={course.title} 
+                    className="w-full h-40 object-cover"
+                    onError={(e) => {
+                      e.target.style.display = 'none';
+                      e.target.parentElement.innerHTML = '<div class="w-full h-40 flex items-center justify-center text-gray-400">No image</div>';
+                    }}
+                  />
                 ) : (
                   <div className="w-full h-40 flex items-center justify-center text-gray-400">No image</div>
                 )}
@@ -112,10 +135,14 @@ export default function Courses() {
                       <span className="text-sm font-semibold">{Number(course.price) === 0 ? 'Free' : `₹${course.price}`}</span>
                     <button
                       onClick={() => handleEnroll(course.id)}
-                      className="inline-flex items-center px-3 py-2 bg-indigo-600 text-white rounded-md text-sm hover:bg-indigo-700 transition"
+                      className={`inline-flex items-center px-3 py-2 rounded-md text-sm transition ${
+                        course.is_enrolled 
+                          ? 'bg-gray-600 text-white hover:bg-gray-700' 
+                          : 'bg-indigo-600 text-white hover:bg-indigo-700'
+                      }`}
                       aria-label={`Enroll in ${course.title}`}
                     >
-                      Enroll
+                      {course.is_enrolled ? 'View' : 'Enroll'}
                     </button>
                   </div>
                 </div>

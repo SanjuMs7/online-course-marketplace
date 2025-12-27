@@ -55,8 +55,8 @@ export default function Login() {
 
   return (
     <>
-    {/* <Header></Header> */}
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4 py-12">
+    <Header></Header>
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4 py-12 fixed left-0 right-0 top-0 bottom-0">
       
       <div className="w-full max-w-4xl grid md:grid-cols-2 bg-white rounded-lg shadow-lg overflow-hidden">
         {/* Left promo */}

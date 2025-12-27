@@ -3,10 +3,22 @@ from .models import Course, Enrollment, Lesson, LessonProgress
 
 class CourseSerializer(serializers.ModelSerializer):
     instructor = serializers.StringRelatedField(read_only=True)  # shows __str__ of user
+    is_enrolled = serializers.SerializerMethodField()
+    
     class Meta:
         model = Course
         fields = '__all__'
         read_only_fields = ['instructor', 'is_approved', 'created_at']
+    
+    def get_is_enrolled(self, obj):
+        """Check if the current user is enrolled in this course"""
+        request = self.context.get('request')
+        if request and request.user.is_authenticated:
+            return Enrollment.objects.filter(
+                student=request.user,
+                course=obj
+            ).exists()
+        return False
 
 class EnrollmentSerializer(serializers.ModelSerializer):
     class Meta:
@@ -19,6 +31,13 @@ class LessonSerializer(serializers.ModelSerializer):
         model = Lesson
         fields = ['id', 'course', 'title', 'description', 'video_url', 'order', 'duration_minutes']
         read_only_fields = ['id']  # id is auto-generated
+        extra_kwargs = {
+            'video_url': {
+                'required': False,
+                'allow_null': True,
+                'allow_blank': True,
+            }
+        }
 
     def validate(self, attrs):
         """

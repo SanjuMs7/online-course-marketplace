@@ -163,7 +163,7 @@ export default function AdminDashboard() {
                   <div className="mt-1"><strong>Price:</strong> {course.price ? `₹${course.price}` : 'Free'}</div>
                 </div>
 
-                <div className="mt-4 mt-auto flex items-center gap-3 justify-end whitespace-nowrap">
+                <div className="mt-auto flex items-center gap-3 justify-end whitespace-nowrap">
                   <span className={`inline-block text-xs font-medium px-2 py-1 rounded ${course.is_approved ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>{course.is_approved ? 'Approved' : 'Pending'}</span>
 
                   {!course.is_approved ? (

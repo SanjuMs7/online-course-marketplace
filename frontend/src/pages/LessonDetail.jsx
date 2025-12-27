@@ -114,7 +114,7 @@ export default function LessonDetail() {
 
           {lesson.description && (
             <div className="mb-8 pb-6 border-b border-gray-200">
-              <h2 className="text-xl font-semibold text-gray-900 mb-3">Description</h2>
+              <h2 className="text-xl font-semibold text-gray-900 mb-3">What this lesson covers</h2>
               <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">
                 {lesson.description}
               </p>

@@ -63,6 +63,22 @@ export default function Profile() {
             </div>
 
             <div className="flex items-center gap-3">
+              {user.role === 'ADMIN' && (
+                <button 
+                  onClick={() => navigate('/admin-dashboard')} 
+                  className="px-3 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700"
+                >
+                  Admin Dashboard
+                </button>
+              )}
+              {user.role === 'INSTRUCTOR' && (
+                <button 
+                  onClick={() => navigate('/instructor-dashboard')} 
+                  className="px-3 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700"
+                >
+                  Instructor Dashboard
+                </button>
+              )}
               <button onClick={handleLogout} className="px-3 py-2 bg-red-600 text-white rounded-md hover:bg-red-700">Logout</button>
             </div>
           </div>
