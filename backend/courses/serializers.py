@@ -17,7 +17,7 @@ class EnrollmentSerializer(serializers.ModelSerializer):
 class LessonSerializer(serializers.ModelSerializer):
     class Meta:
         model = Lesson
-        fields = ['id', 'course', 'title', 'video_url', 'order', 'duration_minutes']
+        fields = ['id', 'course', 'title', 'description', 'video_url', 'order', 'duration_minutes']
         read_only_fields = ['id']  # id is auto-generated
 
     def validate(self, attrs):

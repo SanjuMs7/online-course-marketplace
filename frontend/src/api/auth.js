@@ -30,3 +30,8 @@ export const registerUser = async (full_name, email, password, role) => {
 export const logoutUser = () => {
   localStorage.removeItem('token');
 };
+
+// Admin-only lists
+export const fetchStudents = () => API.get('students/');
+export const fetchInstructors = () => API.get('instructors/');
+export const deleteUserById = (id) => API.delete(`users/${id}/`);

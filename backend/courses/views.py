@@ -23,6 +23,9 @@ class CourseViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         user = self.request.user
 
+        if not user.is_authenticated:
+            return Course.objects.filter(is_approved=True)
+
         if user.role == 'STUDENT':
             return Course.objects.filter(is_approved=True)
 
@@ -38,6 +41,8 @@ class CourseViewSet(viewsets.ModelViewSet):
             permission_classes = [permissions.IsAuthenticated, IsInstructor]
         elif self.action in ['approve', 'reject']:
             permission_classes = [permissions.IsAuthenticated, IsAdmin]
+        elif self.action in ['list', 'retrieve']:
+            permission_classes = [permissions.AllowAny]
         else:
             permission_classes = [permissions.IsAuthenticated]
 

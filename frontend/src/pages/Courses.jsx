@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getCourses, enrollCourse } from '../api/courses';
+import Header from '../components/common/Header';
 
 export default function Courses() {
   const [courses, setCourses] = useState([]);
@@ -10,7 +11,11 @@ export default function Courses() {
   const fetchCourses = async () => {
     try {
       const response = await getCourses();
-      setCourses(response.data);
+      const payload = Array.isArray(response.data)
+        ? response.data
+        : (response.data?.results || []);
+      const sorted = [...payload].sort((a, b) => (a?.id || 0) - (b?.id || 0));
+      setCourses(sorted);
     } catch (err) {
       console.error('Error fetching courses:', err);
     } finally {
@@ -21,24 +26,46 @@ export default function Courses() {
   const handleEnroll = async (courseId) => {
     try {
       await enrollCourse(courseId);
-      alert('Enrolled successfully!');
     } catch (err) {
-      alert('Enrollment failed. Check console.');
-      console.error(err);
+      const status = err?.response?.status;
+      const data = err?.response?.data;
+      const message = typeof data === 'string' ? data : JSON.stringify(data || {});
+
+      // If already enrolled, proceed to lessons
+      if (status === 400 && message.toLowerCase().includes('already enrolled')) {
+        // continue
+      } else if (status === 401 || status === 403) {
+        alert('Please log in as a student to enroll in this course.');
+        return;
+      } else {
+        console.error('Enroll failed:', err);
+        alert('Failed to enroll. Please try again.');
+        return;
+      }
     }
+    navigate(`/courses/${courseId}/lessons/`);
   };
 
-  function handleLogout() {
-    try {
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-    } catch (e) { /* ignore */ }
-    navigate('/login');
-  }
 
   useEffect(() => {
+    const raw = localStorage.getItem('user');
+    if (!raw) {
+      navigate('/register');
+      return;
+    }
+    try {
+      const u = JSON.parse(raw);
+      if (u.role !== 'STUDENT' && u.role !== 'ADMIN') {
+        navigate('/');
+        return;
+      }
+    } catch (e) {
+      navigate('/register');
+      return;
+    }
+
     fetchCourses();
-  }, []);
+  }, [navigate]);
 
   if (loading) return (
     <div className="max-w-6xl mx-auto px-4 py-8">
@@ -47,15 +74,13 @@ export default function Courses() {
   );
 
   return (
+    <>
+    <Header></Header>
     <div className="max-w-6xl mx-auto px-4 py-8">
       <div className="flex items-start justify-between mb-6 gap-4">
         <div>
           <h2 className="text-2xl font-bold text-gray-900">Available Courses</h2>
           <p className="text-sm text-gray-500">Explore curated courses from top instructors</p>
-        </div>
-
-        <div className="flex items-center gap-3">
-          <button onClick={handleLogout} type="button" className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-400">Logout</button>
         </div>
       </div>
 
@@ -84,7 +109,7 @@ export default function Courses() {
                   </div>
 
                   <div className="flex items-center gap-3">
-                    <span className="text-sm font-semibold">{course.price ? `₹${course.price}` : 'Free'}</span>
+                      <span className="text-sm font-semibold">{Number(course.price) === 0 ? 'Free' : `₹${course.price}`}</span>
                     <button
                       onClick={() => handleEnroll(course.id)}
                       className="inline-flex items-center px-3 py-2 bg-indigo-600 text-white rounded-md text-sm hover:bg-indigo-700 transition"
@@ -100,5 +125,6 @@ export default function Courses() {
         </div>
       )}
     </div>
+    </>
   );
 }

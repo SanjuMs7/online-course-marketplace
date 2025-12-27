@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getCourses, createCourse } from '../api/courses';
-
+import { getCourses, createCourse, createLesson, getLessons } from '../api/courses';
+import Header from '../components/common/Header';
 export default function InstructorDashboard() {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -12,14 +12,55 @@ export default function InstructorDashboard() {
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  // Lesson form state
+  const [lessonCourseId, setLessonCourseId] = useState('');
+  const [lessonTitle, setLessonTitle] = useState('');
+  const [lessonDescription, setLessonDescription] = useState('');
+  const [lessonVideoUrl, setLessonVideoUrl] = useState('');
+  const [lessonOrder, setLessonOrder] = useState('');
+  const [lessonSubmitting, setLessonSubmitting] = useState(false);
+  const [suggestedOrder, setSuggestedOrder] = useState('');
   const fileInputRef = useRef(null);
   const navigate = useNavigate();
+
 
   const categories = ['Development', 'Business', 'Design', 'Marketing', 'Music'];
 
   useEffect(() => {
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    if (!user || user.role !== 'INSTRUCTOR') {
+      navigate('/');
+      return;
+    }
     fetchInstructorCourses();
-  }, []);
+  }, [navigate]);
+
+  // When a course is selected, fetch its lessons to suggest the next order
+  useEffect(() => {
+    async function loadOrder() {
+      if (!lessonCourseId) {
+        setSuggestedOrder('');
+        setLessonOrder('');
+        return;
+      }
+      try {
+        const res = await getLessons(lessonCourseId);
+        const list = Array.isArray(res.data) ? res.data : (res.data?.results || []);
+        const maxOrder = list.reduce((m, l) => {
+          const val = Number(l.order) || 0;
+          return val > m ? val : m;
+        }, 0);
+        const next = String(maxOrder + 1 || 1);
+        setSuggestedOrder(next);
+        setLessonOrder(next);
+      } catch (err) {
+        console.error('Failed to fetch lessons for order suggestion', err);
+        setSuggestedOrder('1');
+        setLessonOrder('1');
+      }
+    }
+    loadOrder();
+  }, [lessonCourseId]);
 
   async function fetchInstructorCourses() {
     setLoading(true);
@@ -127,6 +168,50 @@ export default function InstructorDashboard() {
     }
   }
 
+  async function handleLessonSubmit(e) {
+    e.preventDefault();
+    if (!lessonCourseId) {
+      alert('Please select one of your courses.');
+      return;
+    }
+    setLessonSubmitting(true);
+    try {
+      const payload = {
+        course: Number(lessonCourseId),
+        title: lessonTitle,
+        description: lessonDescription,
+        video_url: lessonVideoUrl,
+        order: lessonOrder ? Number(lessonOrder) : (suggestedOrder ? Number(suggestedOrder) : 1),
+      };
+      await createLesson(payload);
+      alert('Lesson created successfully.');
+      // reset lesson form
+      setLessonTitle('');
+      setLessonDescription('');
+      setLessonVideoUrl('');
+      setLessonOrder(suggestedOrder || '');
+      // keep selected course
+      // refresh next order suggestion
+      if (lessonCourseId) {
+        const res = await getLessons(lessonCourseId);
+        const list = Array.isArray(res.data) ? res.data : (res.data?.results || []);
+        const maxOrder = list.reduce((m, l) => {
+          const val = Number(l.order) || 0;
+          return val > m ? val : m;
+        }, 0);
+        const next = String(maxOrder + 1 || 1);
+        setSuggestedOrder(next);
+        setLessonOrder(next);
+      }
+    } catch (err) {
+      console.error('Failed to create lesson', err);
+      const msg = err?.response?.data?.detail || err?.response?.data || 'Failed to create lesson. Ensure you own the course.';
+      alert(typeof msg === 'string' ? msg : 'Failed to create lesson.');
+    } finally {
+      setLessonSubmitting(false);
+    }
+  }
+
   function handleLogout() {
     try {
       localStorage.removeItem('token');
@@ -136,6 +221,8 @@ export default function InstructorDashboard() {
   }
 
   return (
+    <>
+    <Header></Header>
     <div className="max-w-6xl mx-auto px-4 py-8">
       <div className="flex items-start justify-between mb-6 gap-4">
         <div>
@@ -195,6 +282,73 @@ export default function InstructorDashboard() {
           </button>
         </form>
 
+        {/* Lesson creation */}
+        <form className="bg-white rounded-lg shadow p-6 w-full" onSubmit={handleLessonSubmit}>
+          <h2 className="text-lg font-semibold mb-4">Create a lesson</h2>
+
+          <label className="block text-sm font-medium text-gray-700">Course</label>
+          <select
+            value={lessonCourseId}
+            onChange={(e) => setLessonCourseId(e.target.value)}
+            className="mt-1 w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-400"
+            required
+          >
+            <option value="">Select one of your courses</option>
+            {courses.map((c) => (
+              <option key={c.id} value={c.id}>{c.title}</option>
+            ))}
+          </select>
+
+          <label className="block text-sm font-medium text-gray-700 mt-4">Title</label>
+          <input
+            value={lessonTitle}
+            onChange={(e) => setLessonTitle(e.target.value)}
+            className="mt-1 w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-400"
+            required
+          />
+
+          <label className="block text-sm font-medium text-gray-700 mt-4">Description</label>
+          <textarea
+            value={lessonDescription}
+            onChange={(e) => setLessonDescription(e.target.value)}
+            rows={3}
+            className="mt-1 w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-400"
+            placeholder="What this lesson covers"
+          />
+
+          <label className="block text-sm font-medium text-gray-700 mt-4">Video URL</label>
+          <input
+            value={lessonVideoUrl}
+            onChange={(e) => setLessonVideoUrl(e.target.value)}
+            placeholder="https://..."
+            className="mt-1 w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-400"
+          />
+
+          <div className="mt-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Order</label>
+              <input
+                value={lessonOrder}
+                onChange={(e) => setLessonOrder(e.target.value)}
+                type="number"
+                min="1"
+                className="mt-1 w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-400"
+              />
+              {suggestedOrder && (
+                <p className="text-xs text-gray-500 mt-1">Suggested next order: {suggestedOrder}</p>
+              )}
+            </div>
+          </div>
+
+          <button
+            disabled={lessonSubmitting}
+            type="submit"
+            className="mt-6 w-full inline-flex items-center justify-center px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition disabled:opacity-50"
+          >
+            {lessonSubmitting ? 'Creating…' : 'Create lesson'}
+          </button>
+        </form>
+
         {/* Courses list */}
         <div className="w-full">
           <div className="flex items-center justify-between mb-4">
@@ -209,22 +363,39 @@ export default function InstructorDashboard() {
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {courses.map((course, idx) => (
-                <article key={course.id ?? course._id ?? idx} className="bg-white p-4 rounded shadow-sm flex gap-4 items-start">
-                  <div className="w-28 h-20 bg-gray-100 rounded overflow-hidden">
-                    {course.thumbnail ? (
-                      <img src={course.thumbnail} alt={course.title} className="w-full h-full object-cover" />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center text-gray-400">No image</div>
-                    )}
+                <article key={course.id ?? course._id ?? idx} className="bg-white p-4 rounded shadow-sm flex gap-4 items-start flex-col">
+                  <div className="w-full">
+                    <div className="w-full h-24 bg-gray-100 rounded overflow-hidden mb-3">
+                      {course.thumbnail ? (
+                        <img src={course.thumbnail} alt={course.title} className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-gray-400">No image</div>
+                      )}
+                    </div>
+
+                    <div>
+                      <h3 className="font-semibold text-gray-900">{course.title}</h3>
+                      <p className="text-sm text-gray-600 line-clamp-2">{course.description}</p>
+                      <div className="mt-3 flex items-center gap-3">
+                        <span className="text-sm font-semibold">{course.price ? `₹${course.price}` : 'Free'}</span>
+                        <span className="text-xs text-gray-500">{course.is_approved ? 'Approved' : 'Pending'}</span>
+                      </div>
+                    </div>
                   </div>
 
-                  <div className="flex-1">
-                    <h3 className="font-semibold text-gray-900">{course.title}</h3>
-                    <p className="text-sm text-gray-600 line-clamp-2">{course.description}</p>
-                    <div className="mt-3 flex items-center gap-3">
-                      <span className="text-sm font-semibold">{course.price ? `₹${course.price}` : 'Free'}</span>
-                      <span className="text-xs text-gray-500">{course.is_approved ? 'Approved' : 'Pending'}</span>
-                    </div>
+                  <div className="w-full flex gap-2 mt-3">
+                    <button
+                      onClick={() => navigate(`/courses/${course.id}/edit`)}
+                      className="flex-1 px-3 py-2 bg-indigo-600 text-white text-sm rounded hover:bg-indigo-700 transition"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      onClick={() => navigate(`/courses/${course.id}/lessons`)}
+                      className="flex-1 px-3 py-2 bg-gray-600 text-white text-sm rounded hover:bg-gray-700 transition"
+                    >
+                      Lessons
+                    </button>
                   </div>
                 </article>
               ))}
@@ -233,5 +404,6 @@ export default function InstructorDashboard() {
         </div>
       </div>
     </div>
+    </>
   );
 }

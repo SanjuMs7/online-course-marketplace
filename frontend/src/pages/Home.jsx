@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import Header from '../components/common/Header';
 import { getCourses } from '../api/courses';
 
@@ -7,11 +7,30 @@ export default function Home() {
   const [courses, setCourses] = useState([]);
   const [search, setSearch] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
+  const navigate = useNavigate();
+
+  const handleCourseClick = (e, courseId) => {
+    const user = localStorage.getItem('user');
+    if (!user) {
+      e.preventDefault();
+      navigate('/register');
+      alert('Please register or log in to access course details.');
+    }
+  };
 
   useEffect(() => {
     getCourses()
-      .then(res => setCourses(res.data))
-      .catch(err => console.error(err));
+      .then(res => {
+        const data = res.data;
+        if (Array.isArray(data)) {
+          setCourses(data);
+        } else if (data.results && Array.isArray(data.results)) {
+          setCourses(data.results);
+        } else {
+          console.warn('Unexpected API response structure:', data);
+        }
+      })
+      .catch(err => console.error('Error fetching courses:', err));
   }, []);
 
   const categories = ['All', 'Development', 'Business', 'Design', 'Marketing', 'Music'];
@@ -46,7 +65,39 @@ export default function Home() {
           </div>
         </section>
 
-        <section className="max-w-6xl mx-auto px-4 mt-6">
+        <section className="max-w-6xl mx-auto px-4 mt-12">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-2xl font-bold text-gray-900">Trending courses</h2>
+            <Link to="/courses" className="text-indigo-600 text-sm">View all</Link>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {courses.slice(0, 4).map(course => (
+              <Link key={course.id} to={`/courses?courseId=${course.id}`} onClick={(e) => handleCourseClick(e, course.id)}>
+                <article className="bg-white rounded-lg p-3 shadow-sm hover:shadow-lg transition flex flex-col cursor-pointer h-full">
+                  <div className="h-36 rounded-md bg-gradient-to-r from-indigo-50 to-indigo-100 border border-indigo-200 mb-3 flex items-center justify-center">
+                    <svg className="w-12 h-12 text-indigo-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M12 6.253v13m0-13C6.5 6.253 2 10.588 2 16s4.5 9.747 10 9.747 10-4.292 10-9.747c0-5.412-4.5-9.747-10-9.747z" />
+                    </svg>
+                  </div>
+                  <div className="mb-2">
+                    <span className="inline-block text-xs bg-red-50 text-red-700 px-2 py-0.5 rounded-full font-semibold">Trending</span>
+                  </div>
+                  <h4 className="text-sm font-semibold text-gray-900">{course.title}</h4>
+                  <p className="text-xs text-gray-500">{(course.instructor && course.instructor.username) || 'Instructor'}</p>
+                  <p className="text-sm text-gray-700 mt-2 line-clamp-2">{course.description?.slice(0, 100)}{course.description?.length > 100 ? '...' : ''}</p>
+
+                  <div className="mt-auto flex items-center justify-between text-sm pt-3">
+                    <span className="inline-block text-xs bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded-full">{course.is_approved ? 'Approved' : 'Pending'}</span>
+                    <span className="font-semibold text-gray-900">{course.price > 0 ? `₹${course.price}` : 'Free'}</span>
+                  </div>
+                </article>
+              </Link>
+            ))}
+          </div>
+        </section>
+
+        <section className="max-w-6xl mx-auto px-4 mt-10">
           <h3 className="text-lg font-semibold text-gray-800">Popular categories</h3>
           <div className="mt-3 flex flex-wrap gap-2">
             {categories.map(cat => (
@@ -69,17 +120,19 @@ export default function Home() {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {filtered.slice(0, 8).map(course => (
-              <article className="bg-white rounded-lg p-3 shadow-sm flex flex-col" key={course.id}>
-                <div className="h-36 rounded-md bg-gradient-to-r from-indigo-50 to-white border border-gray-100 mb-3" />
-                <h4 className="text-sm font-semibold text-gray-900">{course.title}</h4>
-                <p className="text-xs text-gray-500">{(course.instructor && course.instructor.username) || 'Instructor'}</p>
-                <p className="text-sm text-gray-700 mt-2 line-clamp-3">{course.description?.slice(0, 120)}{course.description?.length > 120 ? '...' : ''}</p>
+              <Link key={course.id} to={`/courses?courseId=${course.id}`} onClick={(e) => handleCourseClick(e, course.id)}>
+                <article className="bg-white rounded-lg p-3 shadow-sm hover:shadow-lg transition flex flex-col cursor-pointer h-full">
+                  <div className="h-36 rounded-md bg-gradient-to-r from-indigo-50 to-white border border-gray-100 mb-3" />
+                  <h4 className="text-sm font-semibold text-gray-900">{course.title}</h4>
+                  <p className="text-xs text-gray-500">{(course.instructor && course.instructor.username) || 'Instructor'}</p>
+                  <p className="text-sm text-gray-700 mt-2 line-clamp-3">{course.description?.slice(0, 120)}{course.description?.length > 120 ? '...' : ''}</p>
 
-                <div className="mt-auto flex items-center justify-between text-sm text-gray-700 pt-3">
-                  <span className="inline-block text-xs bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded-full">{course.is_approved ? 'Approved' : 'Pending'}</span>
-                  <span className="font-semibold">{course.price ? `₹${course.price}` : 'Free'}</span>
-                </div>
-              </article>
+                  <div className="mt-auto flex items-center justify-between text-sm text-gray-700 pt-3">
+                    <span className="inline-block text-xs bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded-full">{course.is_approved ? 'Approved' : 'Pending'}</span>
+                    <span className="font-semibold">{course.price > 0? `₹${course.price}` : 'Free'}</span>
+                  </div>
+                </article>
+              </Link>
             ))}
 
             {filtered.length === 0 && (

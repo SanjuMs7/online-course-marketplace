@@ -58,3 +58,10 @@ class InstructorListView(generics.ListAPIView):
 
     def get_queryset(self):
         return User.objects.filter(role='INSTRUCTOR')
+
+
+# 6️⃣ Admin delete user (student or instructor)
+class AdminUserDeleteView(generics.DestroyAPIView):
+    queryset = User.objects.all()
+    serializer_class = UserSerializer
+    permission_classes = [IsAuthenticated, IsAdmin]

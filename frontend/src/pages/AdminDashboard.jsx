@@ -3,10 +3,14 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import API from '../api/axiosCourses';
 import { approveCourse } from '../api/courses';
+import { fetchStudents, fetchInstructors, deleteUserById } from '../api/auth';
 
 export default function AdminDashboard() {
   const [courses, setCourses] = useState([]);
+  const [students, setStudents] = useState([]);
+  const [instructors, setInstructors] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadingUsers, setLoadingUsers] = useState(true);
   const navigate = useNavigate();
 
   // Fetch all courses for admin
@@ -60,8 +64,56 @@ export default function AdminDashboard() {
   }
 
   useEffect(() => {
+    const raw = localStorage.getItem('user');
+    if (!raw) {
+      navigate('/login');
+      return;
+    }
+    try {
+      const u = JSON.parse(raw);
+      if (u.role !== 'ADMIN') {
+        navigate('/');
+        alert('Access denied. Admins only.');
+        return;
+      }
+    } catch (e) {
+      navigate('/login');
+      return;
+    }
+
     fetchCourses();
-  }, []);
+    fetchPeople();
+  }, [navigate]);
+
+  async function fetchPeople() {
+    setLoadingUsers(true);
+    try {
+      const [studentsRes, instructorsRes] = await Promise.all([
+        fetchStudents(),
+        fetchInstructors(),
+      ]);
+      setStudents(Array.isArray(studentsRes.data) ? studentsRes.data : []);
+      setInstructors(Array.isArray(instructorsRes.data) ? instructorsRes.data : []);
+    } catch (err) {
+      console.error('Error fetching users:', err);
+      alert('Failed to fetch students/instructors.');
+    } finally {
+      setLoadingUsers(false);
+    }
+  }
+
+  async function handleRemoveUser(id, roleLabel) {
+    const confirmMsg = `Remove this ${roleLabel.toLowerCase()}?`;
+    if (!window.confirm(confirmMsg)) return;
+    try {
+      await deleteUserById(id);
+      await fetchPeople();
+      alert(`${roleLabel} removed.`);
+    } catch (err) {
+      console.error('Failed to remove user', err);
+      alert('Failed to remove user.');
+    }
+  }
 
   if (loading) return (
     <div className="flex items-center justify-center py-12">
@@ -128,6 +180,68 @@ export default function AdminDashboard() {
           ))}
         </div>
       )}
+
+      <div className="mt-10 grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <section className="bg-white p-4 rounded-lg shadow-sm">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-lg font-semibold text-gray-900">Instructors</h3>
+            {loadingUsers && <span className="text-xs text-gray-500">Loading...</span>}
+          </div>
+          {instructors.length === 0 ? (
+            <p className="text-gray-500 text-sm">No instructors found.</p>
+          ) : (
+            <ul className="divide-y divide-gray-100">
+              {instructors.map(inst => (
+                <li key={inst.id} className="py-2 flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-900">{inst.full_name || inst.username || inst.email}</p>
+                    <p className="text-xs text-gray-500">{inst.email}</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs bg-indigo-50 text-indigo-700 px-2 py-1 rounded">Instructor</span>
+                    <button
+                      onClick={() => handleRemoveUser(inst.id, 'Instructor')}
+                      className="text-xs text-red-600 hover:underline"
+                    >
+                      Remove
+                    </button>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+
+        <section className="bg-white p-4 rounded-lg shadow-sm">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-lg font-semibold text-gray-900">Students</h3>
+            {loadingUsers && <span className="text-xs text-gray-500">Loading...</span>}
+          </div>
+          {students.length === 0 ? (
+            <p className="text-gray-500 text-sm">No students found.</p>
+          ) : (
+            <ul className="divide-y divide-gray-100">
+              {students.map(std => (
+                <li key={std.id} className="py-2 flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-900">{std.full_name || std.username || std.email}</p>
+                    <p className="text-xs text-gray-500">{std.email}</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs bg-green-50 text-green-700 px-2 py-1 rounded">Student</span>
+                    <button
+                      onClick={() => handleRemoveUser(std.id, 'Student')}
+                      className="text-xs text-red-600 hover:underline"
+                    >
+                      Remove
+                    </button>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      </div>
     </div>
   );
 }
