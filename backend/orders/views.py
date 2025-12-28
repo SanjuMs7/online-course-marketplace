@@ -166,3 +166,22 @@ def get_user_orders(request):
     serializer = OrderSerializer(orders, many=True)
     return Response(serializer.data, status=status.HTTP_200_OK)
 
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_instructor_earnings(request):
+    """
+    Get all paid orders for courses taught by the instructor
+    """
+    # Get all courses by this instructor
+    instructor_courses = Course.objects.filter(instructor=request.user)
+    
+    # Get all paid orders for these courses
+    orders = Order.objects.filter(
+        course__in=instructor_courses,
+        status='PAID'
+    ).select_related('course', 'user').order_by('-created_at')
+    
+    serializer = OrderSerializer(orders, many=True)
+    return Response(serializer.data, status=status.HTTP_200_OK)
+

@@ -39,6 +39,12 @@ export default function Courses() {
 
   const handleEnroll = async (courseId) => {
     const course = courses.find(c => c.id === courseId);
+
+    // If already enrolled, go straight to lessons
+    if (course?.is_enrolled) {
+      navigate(`/courses/${courseId}/lessons/`);
+      return;
+    }
     
     // If course is paid, show payment modal
     if (course && Number(course.price) > 0) {

@@ -129,7 +129,7 @@ export default function CourseLessons() {
                 <div className="flex-1">
                   <h3 className="text-lg font-semibold text-gray-900">{lesson.title}</h3>
                   {lesson.description && (
-                    <p className="text-sm text-gray-700 mt-1">{lesson.description}</p>
+                    <p className="text-sm text-gray-700 mt-1 pr-4 line-clamp-2">{lesson.description}</p>
                   )}
                   <p className="text-sm text-gray-600">{lesson.duration_minutes ? `${lesson.duration_minutes} min` : 'Duration not set'}</p>
                 </div>

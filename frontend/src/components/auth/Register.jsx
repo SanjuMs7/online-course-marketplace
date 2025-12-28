@@ -17,8 +17,25 @@ export default function Register() {
     setLoading(true);
     try {
       const data = await registerUser(fullName, email, password, role);
-      alert('Registration successful! Please sign in.');
-      navigate('/login');
+      
+      // Store token and user info if returned
+      if (data.token) {
+        localStorage.setItem('token', data.token);
+      }
+      if (data.user) {
+        localStorage.setItem('user', JSON.stringify(data.user));
+      }
+      
+      alert('Registration successful!');
+      
+      // Redirect based on role
+      if (role === 'STUDENT') {
+        navigate('/courses');
+      } else if (role === 'INSTRUCTOR') {
+        navigate('/instructor-dashboard');
+      } else {
+        navigate('/login');
+      }
     } catch (err) {
       alert('Registration failed! Check console for details.');
       console.error(err);

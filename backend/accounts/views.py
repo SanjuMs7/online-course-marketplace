@@ -15,6 +15,28 @@ class RegisterUserView(generics.CreateAPIView):
     serializer_class = UserRegisterSerializer
     permission_classes = [AllowAny]  # <--- allow anyone to register
 
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user = serializer.save()
+        
+        # Create token for the new user
+        token, _ = Token.objects.get_or_create(user=user)
+        
+        # Return token and user data
+        user_data = {
+            'id': user.id,
+            'email': user.email,
+            'full_name': user.full_name,
+            'role': user.role
+        }
+        
+        return Response({
+            'token': token.key,
+            'user': user_data,
+            'message': 'Registration successful'
+        }, status=status.HTTP_201_CREATED)
+
 # 2️⃣ Login API (public)
 class LoginUserView(APIView):
     permission_classes = [AllowAny]

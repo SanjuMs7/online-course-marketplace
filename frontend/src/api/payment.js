@@ -24,3 +24,9 @@ export const getUserOrders = () => {
     { headers: getAuthHeaders() }
   );
 };
+
+export const getInstructorEarnings = () => {
+  return axios.get('http://localhost:8000/api/orders/instructor-earnings/',
+    { headers: getAuthHeaders() }
+  );
+};
