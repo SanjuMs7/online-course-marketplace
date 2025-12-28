@@ -1,7 +1,26 @@
 import { useNavigate } from 'react-router-dom';
+import { deleteCourse } from '../../api/courses';
 
-export default function CoursesList({ courses, loading }) {
+export default function CoursesList({ courses, loading, onCourseDeleted }) {
   const navigate = useNavigate();
+
+  const handleDelete = async (courseId, courseTitle) => {
+    const confirmed = window.confirm(`Are you sure you want to delete "${courseTitle}"? This action cannot be undone.`);
+    if (!confirmed) return;
+
+    try {
+      await deleteCourse(courseId);
+      alert('Course deleted successfully.');
+      if (onCourseDeleted) {
+        onCourseDeleted(courseId);
+      } else {
+        window.location.reload();
+      }
+    } catch (err) {
+      console.error('Failed to delete course:', err);
+      alert('Failed to delete course. Please try again.');
+    }
+  };
 
   return (
     <div className="w-full">
@@ -49,6 +68,12 @@ export default function CoursesList({ courses, loading }) {
                   className="flex-1 px-3 py-2 bg-gray-600 text-white text-sm rounded hover:bg-gray-700 transition"
                 >
                   Lessons
+                </button>
+                <button
+                  onClick={() => handleDelete(course.id, course.title)}
+                  className="px-3 py-2 bg-red-600 text-white text-sm rounded hover:bg-red-700 transition"
+                >
+                  Delete
                 </button>
               </div>
             </article>

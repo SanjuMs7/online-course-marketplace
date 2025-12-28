@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import Header from '../components/common/Header';
+import { getCourses } from '../api/courses';
 
 function getInitials(name) {
   if (!name) return '';
@@ -16,7 +17,17 @@ export default function Profile() {
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [avatarUrl, setAvatarUrl] = useState('');
+  const [enrolledCourses, setEnrolledCourses] = useState([]);
+  const [loadingCourses, setLoadingCourses] = useState(false);
   const navigate = useNavigate();
+
+  const getThumbnailUrl = (thumbnailPath) => {
+    if (!thumbnailPath) return null;
+    if (thumbnailPath.startsWith('http://') || thumbnailPath.startsWith('https://')) {
+      return thumbnailPath;
+    }
+    return `http://localhost:8000${thumbnailPath}`;
+  };
 
   useEffect(() => {
     const raw = localStorage.getItem('user');
@@ -30,6 +41,28 @@ export default function Profile() {
       } catch (err) {
       }
     }
+  }, []);
+
+  useEffect(() => {
+    const fetchEnrolledCourses = async () => {
+      try {
+        setLoadingCourses(true);
+        const response = await getCourses();
+        const allCourses = Array.isArray(response.data)
+          ? response.data
+          : (response.data?.results || []);
+        
+        // Filter only enrolled courses
+        const enrolled = allCourses.filter(course => course.is_enrolled === true);
+        setEnrolledCourses(enrolled);
+      } catch (err) {
+        console.error('Error fetching enrolled courses:', err);
+      } finally {
+        setLoadingCourses(false);
+      }
+    };
+
+    fetchEnrolledCourses();
   }, []);
 
   function handleSave(e) {
@@ -129,6 +162,55 @@ export default function Profile() {
             </div>
           </div>
         </div>
+
+        {user.role === 'STUDENT' && (
+          <div className="mt-8 bg-white rounded-lg shadow p-6">
+            <h2 className="text-xl font-bold text-gray-900 mb-4">Your Enrolled Courses</h2>
+            
+            {loadingCourses ? (
+              <p className="text-center text-gray-500">Loading courses...</p>
+            ) : enrolledCourses.length === 0 ? (
+              <p className="text-center text-gray-500">You haven't enrolled in any courses yet.</p>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                {enrolledCourses.map(course => (
+                  <Link key={course.id} to={`/courses/${course.id}/lessons/`}>
+                    <div className="bg-white rounded-lg shadow-sm overflow-hidden hover:shadow-lg transition flex flex-col cursor-pointer h-full">
+                      <div className="h-40 bg-gradient-to-r from-indigo-50 to-white border-b border-gray-100">
+                        {course.thumbnail ? (
+                          <img 
+                            src={getThumbnailUrl(course.thumbnail)} 
+                            alt={course.title} 
+                            className="w-full h-40 object-cover"
+                            onError={(e) => {
+                              e.target.style.display = 'none';
+                              e.target.parentElement.innerHTML = '<div class="w-full h-40 flex items-center justify-center text-gray-400">No image</div>';
+                            }}
+                          />
+                        ) : (
+                          <div className="w-full h-40 flex items-center justify-center text-gray-400">No image</div>
+                        )}
+                      </div>
+
+                      <div className="p-4 flex-1 flex flex-col">
+                        <h3 className="text-lg font-semibold text-gray-900 mb-1 line-clamp-2">{course.title}</h3>
+                        <p className="text-sm text-gray-600 mb-3 line-clamp-3">{course.description}</p>
+
+                        <div className="mt-auto">
+                          <div className="flex items-center justify-between">
+                            <p className="text-xs text-gray-500">Instructor</p>
+                            <span className="text-sm font-semibold">{Number(course.price) === 0 ? 'Free' : `₹${course.price}`}</span>
+                          </div>
+                          <p className="text-sm text-gray-800">{(course.instructor && course.instructor.username) || 'Instructor'}</p>
+                        </div>
+                      </div>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </>
   );

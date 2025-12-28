@@ -4,6 +4,7 @@ export const getCourses = () => API.get('courses/');
 export const getCourse = (id) => API.get(`courses/${id}/`);
 export const createCourse = (data) => API.post('courses/', data);
 export const updateCourse = (id, data) => API.put(`courses/${id}/`, data);
+export const deleteCourse = (id) => API.delete(`courses/${id}/`);
 export const approveCourse = (courseId) =>
   API.post(`courses/${courseId}/approve/`);
 export const enrollCourse = (courseId) =>
@@ -11,6 +12,11 @@ export const enrollCourse = (courseId) =>
 export const getLessons = (courseId) => API.get(`courses/${courseId}/lessons/`);
 
 // Lesson management (Instructor only)
-export const createLesson = (payload) => API.post('lessons/create/', payload);
+export const createLesson = (payload) => {
+  const isFormData = typeof FormData !== 'undefined' && payload instanceof FormData;
+  return API.post('lessons/create/', payload, isFormData ? {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  } : undefined);
+};
 export const updateLesson = (id, payload) => API.put(`lessons/${id}/update/`, payload);
 export const deleteLesson = (id) => API.delete(`lessons/${id}/delete/`);

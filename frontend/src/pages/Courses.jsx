@@ -6,6 +6,7 @@ import Header from '../components/common/Header';
 export default function Courses() {
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState('');
   const navigate = useNavigate();
 
   const getThumbnailUrl = (thumbnailPath) => {
@@ -83,6 +84,15 @@ export default function Courses() {
     </div>
   );
 
+  const filteredCourses = courses.filter(course => {
+    if (!search.trim()) return true;
+    const query = search.toLowerCase();
+    return (
+      course.title.toLowerCase().includes(query) ||
+      course.description.toLowerCase().includes(query)
+    );
+  });
+
   return (
     <>
     <Header></Header>
@@ -94,11 +104,22 @@ export default function Courses() {
         </div>
       </div>
 
-      {courses.length === 0 ? (
+      <div className="mb-6">
+        <input
+          type="text"
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          placeholder="Search courses by title or description..."
+          className="w-full px-4 py-3 rounded-lg border border-gray-200 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-400"
+          aria-label="Search courses"
+        />
+      </div>
+
+      {filteredCourses.length === 0 ? (
         <p className="text-center text-gray-500">No courses available.</p>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {courses.map(course => (
+          {filteredCourses.map(course => (
             <article key={course.id} className="bg-white rounded-lg shadow-sm overflow-hidden flex flex-col relative">
               {course.is_enrolled && (
                 <div className="absolute top-2 right-2 z-10 bg-green-500 text-white px-3 py-1 rounded-full text-xs font-semibold shadow-md">

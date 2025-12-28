@@ -121,22 +121,54 @@ export default function LessonDetail() {
             </div>
           )}
 
-          {lesson.video_url ? (
+          {(lesson.video_file || lesson.video_url) ? (
             <div className="mb-8">
               <h2 className="text-xl font-semibold text-gray-900 mb-3">Video</h2>
-              <div className="bg-gray-100 rounded-lg p-6 flex items-center justify-center min-h-96">
-                <a
-                  href={lesson.video_url}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="inline-flex items-center px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition font-medium"
-                >
-                  <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                    <path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z" />
-                  </svg>
-                  Watch Video
-                </a>
-              </div>
+              
+              {/* Display uploaded video file */}
+              {lesson.video_file && (
+                <div className="bg-black rounded-lg overflow-hidden shadow mb-4">
+                  <video
+                    src={lesson.video_file.startsWith('http') ? lesson.video_file : `http://localhost:8000${lesson.video_file}`}
+                    className="w-full"
+                    controls
+                    preload="metadata"
+                  >
+                    Your browser does not support the video tag.
+                  </video>
+                </div>
+              )}
+              
+              {/* Display external URL link */}
+              {lesson.video_url && (lesson.video_url.startsWith('http://') || lesson.video_url.startsWith('https://')) && (
+                <div className="bg-gray-100 rounded-lg p-4 flex items-center justify-center">
+                  <a
+                    href={lesson.video_url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition font-medium"
+                  >
+                    <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                      <path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z" />
+                    </svg>
+                    Open Video Link
+                  </a>
+                </div>
+              )}
+              
+              {/* Fallback: if video_url exists but is not external and no video_file, display it */}
+              {!lesson.video_file && lesson.video_url && !(lesson.video_url.startsWith('http://') || lesson.video_url.startsWith('https://')) && (
+                <div className="bg-black rounded-lg overflow-hidden shadow">
+                  <video
+                    src={lesson.video_url.startsWith('/media') ? `http://localhost:8000${lesson.video_url}` : lesson.video_url}
+                    className="w-full"
+                    controls
+                    preload="metadata"
+                  >
+                    Your browser does not support the video tag.
+                  </video>
+                </div>
+              )}
             </div>
           ) : (
             <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-8">
@@ -151,14 +183,14 @@ export default function LessonDetail() {
             >
               ← Back to lessons
             </button>
-            {lesson.video_url && (
+            {lesson.video_url && (lesson.video_url.startsWith('http://') || lesson.video_url.startsWith('https://')) && (
               <a
                 href={lesson.video_url}
                 target="_blank"
                 rel="noreferrer"
                 className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition font-medium"
               >
-                Open Video →
+                Open Video Link →
               </a>
             )}
           </div>

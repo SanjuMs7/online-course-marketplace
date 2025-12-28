@@ -50,6 +50,7 @@ class Lesson(models.Model):
     title = models.CharField(max_length=255)
     description = models.TextField(blank=True, default="")
     video_url = models.URLField(blank=True, null=True)
+    video_file = models.FileField(upload_to='lesson_videos/', blank=True, null=True)
     order = models.PositiveIntegerField()
     duration_minutes = models.PositiveIntegerField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)

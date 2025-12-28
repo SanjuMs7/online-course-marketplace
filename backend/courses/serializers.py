@@ -29,15 +29,32 @@ class EnrollmentSerializer(serializers.ModelSerializer):
 class LessonSerializer(serializers.ModelSerializer):
     class Meta:
         model = Lesson
-        fields = ['id', 'course', 'title', 'description', 'video_url', 'order', 'duration_minutes']
+        fields = ['id', 'course', 'title', 'description', 'video_url', 'video_file', 'order', 'duration_minutes']
         read_only_fields = ['id']  # id is auto-generated
         extra_kwargs = {
             'video_url': {
                 'required': False,
                 'allow_null': True,
                 'allow_blank': True,
+            },
+            'video_file': {
+                'required': False,
+                'allow_null': True,
             }
         }
+    
+    def create(self, validated_data):
+        """
+        When creating a lesson with a video file, automatically set video_url to the file path.
+        """
+        video_file = validated_data.get('video_file')
+        if video_file and not validated_data.get('video_url'):
+            lesson = super().create(validated_data)
+            # Set video_url to the file URL
+            lesson.video_url = lesson.video_file.url
+            lesson.save()
+            return lesson
+        return super().create(validated_data)
 
     def validate(self, attrs):
         """

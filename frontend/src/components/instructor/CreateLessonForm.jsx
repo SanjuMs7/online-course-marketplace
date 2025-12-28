@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { getLessons } from '../../api/courses';
 
 export default function CreateLessonForm({ courses, onLessonCreated }) {
@@ -6,9 +6,11 @@ export default function CreateLessonForm({ courses, onLessonCreated }) {
   const [lessonTitle, setLessonTitle] = useState('');
   const [lessonDescription, setLessonDescription] = useState('');
   const [lessonVideoUrl, setLessonVideoUrl] = useState('');
+  const [lessonVideoFile, setLessonVideoFile] = useState(null);
   const [lessonOrder, setLessonOrder] = useState('');
   const [lessonSubmitting, setLessonSubmitting] = useState(false);
   const [suggestedOrder, setSuggestedOrder] = useState('');
+  const fileInputRef = useRef(null);
 
   // When a course is selected, fetch its lessons to suggest the next order
   useEffect(() => {
@@ -45,20 +47,38 @@ export default function CreateLessonForm({ courses, onLessonCreated }) {
     }
     setLessonSubmitting(true);
     try {
-      const payload = {
-        course: Number(lessonCourseId),
-        title: lessonTitle,
-        description: lessonDescription,
-        video_url: lessonVideoUrl,
-        order: lessonOrder ? Number(lessonOrder) : (suggestedOrder ? Number(suggestedOrder) : 1),
-      };
-      
+      const orderValue = lessonOrder ? Number(lessonOrder) : (suggestedOrder ? Number(suggestedOrder) : 1);
+
+      let payload;
+      if (lessonVideoFile) {
+        // Send as multipart when uploading a video file
+        const formData = new FormData();
+        formData.append('course', Number(lessonCourseId));
+        formData.append('title', lessonTitle);
+        formData.append('description', lessonDescription);
+        formData.append('order', orderValue);
+        formData.append('video_file', lessonVideoFile);
+        if (lessonVideoUrl) formData.append('video_url', lessonVideoUrl);
+        payload = formData;
+      } else {
+        // Fallback to URL-only payload
+        payload = {
+          course: Number(lessonCourseId),
+          title: lessonTitle,
+          description: lessonDescription,
+          video_url: lessonVideoUrl,
+          order: orderValue,
+        };
+      }
+
       await onLessonCreated(payload);
 
       // Reset lesson form
       setLessonTitle('');
       setLessonDescription('');
       setLessonVideoUrl('');
+      setLessonVideoFile(null);
+      if (fileInputRef.current) fileInputRef.current.value = '';
       setLessonOrder(suggestedOrder || '');
 
       // Refresh next order suggestion
@@ -116,13 +136,33 @@ export default function CreateLessonForm({ courses, onLessonCreated }) {
         placeholder="What this lesson covers"
       />
 
+      <label className="block text-sm font-medium text-gray-700 mt-4">Upload Video File</label>
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="video/*"
+        onChange={(e) => setLessonVideoFile(e.target.files?.[0] || null)}
+        className="mt-1 w-full text-sm text-gray-700"
+      />
+      <p className="text-xs text-gray-500 mt-1">Upload a video file from your computer</p>
+
+      <div className="mt-4 relative">
+        <div className="absolute inset-0 flex items-center" aria-hidden="true">
+          <div className="w-full border-t border-gray-300"></div>
+        </div>
+        <div className="relative flex justify-center text-sm">
+          <span className="px-2 bg-white text-gray-500">OR</span>
+        </div>
+      </div>
+
       <label className="block text-sm font-medium text-gray-700 mt-4">Video URL</label>
       <input
         value={lessonVideoUrl}
         onChange={(e) => setLessonVideoUrl(e.target.value)}
-        placeholder="https://..."
+        placeholder="https://youtube.com/... or https://vimeo.com/..."
         className="mt-1 w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-400"
       />
+      <p className="text-xs text-gray-500 mt-1">Provide an external video URL (YouTube, Vimeo, etc.)</p>
 
       <div className="mt-4">
         <div>
