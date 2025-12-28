@@ -2,10 +2,8 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getCourses, createCourse, createLesson } from '../api/courses';
 import Header from '../components/common/Header';
-import InstructorEarnings from '../components/common/InstructorEarnings';
 import CreateCourseForm from '../components/instructor/CreateCourseForm';
 import CreateLessonForm from '../components/instructor/CreateLessonForm';
-import CoursesList from '../components/instructor/CoursesList';
 
 export default function InstructorDashboard() {
   const [courses, setCourses] = useState([]);
@@ -115,10 +113,8 @@ export default function InstructorDashboard() {
         </div>
 
         <div className="flex flex-col gap-6">
-          <InstructorEarnings />
           <CreateCourseForm onCourseCreated={handleCourseCreated} />
           <CreateLessonForm courses={courses} onLessonCreated={handleLessonCreated} />
-          <CoursesList courses={courses} loading={loading} />
         </div>
       </div>
     </>

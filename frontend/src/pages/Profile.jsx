@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import Header from '../components/common/Header';
 import PaymentHistory from '../components/common/PaymentHistory';
+import InstructorEarnings from '../components/common/InstructorEarnings';
+import CoursesList from '../components/instructor/CoursesList';
 import { getCourses } from '../api/courses';
 
 function getInitials(name) {
@@ -20,6 +22,8 @@ export default function Profile() {
   const [avatarUrl, setAvatarUrl] = useState('');
   const [enrolledCourses, setEnrolledCourses] = useState([]);
   const [loadingCourses, setLoadingCourses] = useState(false);
+  const [instructorCourses, setInstructorCourses] = useState([]);
+  const [loadingInstructorCourses, setLoadingInstructorCourses] = useState(false);
   const navigate = useNavigate();
 
   const getThumbnailUrl = (thumbnailPath) => {
@@ -52,8 +56,6 @@ export default function Profile() {
         const allCourses = Array.isArray(response.data)
           ? response.data
           : (response.data?.results || []);
-        
-        // Filter only enrolled courses
         const enrolled = allCourses.filter(course => course.is_enrolled === true);
         setEnrolledCourses(enrolled);
       } catch (err) {
@@ -63,8 +65,63 @@ export default function Profile() {
       }
     };
 
-    fetchEnrolledCourses();
-  }, []);
+    const fetchInstructorCourses = async () => {
+      try {
+        setLoadingInstructorCourses(true);
+        const response = await getCourses();
+        const allCourses = Array.isArray(response.data)
+          ? response.data
+          : (response.data?.results || []);
+
+        const userCandidates = [];
+        if (user) {
+          if (user.id) userCandidates.push(String(user.id));
+          if (user._id) userCandidates.push(String(user._id));
+          if (user.username) userCandidates.push(String(user.username));
+          if (user.email) userCandidates.push(String(user.email));
+        }
+
+        const isMyCourse = (course) => {
+          if (!userCandidates.length) return false;
+          if (course.instructor) {
+            if (typeof course.instructor === 'object') {
+              const instr = course.instructor;
+              const vals = [instr.id, instr._id, instr.username, instr.email].filter(Boolean).map(String);
+              if (vals.some(v => userCandidates.includes(v))) return true;
+            } else if (typeof course.instructor === 'string' && userCandidates.includes(course.instructor)) {
+              return true;
+            }
+          }
+
+          const fallbackKeys = ['creator', 'created_by', 'instructor_id', 'user', 'author'];
+          for (const k of fallbackKeys) {
+            if (!course[k]) continue;
+            if (typeof course[k] === 'object') {
+              const vals = [course[k].id, course[k]._id, course[k].username, course[k].email].filter(Boolean).map(String);
+              if (vals.some(v => userCandidates.includes(v))) return true;
+            } else if (typeof course[k] === 'string' && userCandidates.includes(course[k])) {
+              return true;
+            }
+          }
+          return false;
+        };
+
+        const mine = allCourses.filter(isMyCourse);
+        setInstructorCourses(mine);
+      } catch (err) {
+        console.error('Error fetching instructor courses:', err);
+      } finally {
+        setLoadingInstructorCourses(false);
+      }
+    };
+
+    if (user.role === 'STUDENT') {
+      fetchEnrolledCourses();
+    }
+    if (user.role === 'INSTRUCTOR') {
+      fetchInstructorCourses();
+    }
+  }, [user]);
 
   function handleSave(e) {
     e.preventDefault();
@@ -213,6 +270,69 @@ export default function Profile() {
                   ))}
                 </div>
               )}
+            </div>
+          </>
+        )}
+
+        {user.role === 'INSTRUCTOR' && (
+          <>
+            <div className="mt-8 bg-white rounded-lg shadow p-6">
+              <h2 className="text-xl font-bold text-gray-900 mb-4">Earnings</h2>
+              <InstructorEarnings />
+            </div>
+
+            <div className="mt-8 bg-white rounded-lg shadow p-6">
+              <h2 className="text-xl font-bold text-gray-900 mb-4">Your Courses</h2>
+              <CoursesList
+                courses={instructorCourses}
+                loading={loadingInstructorCourses}
+                onCourseDeleted={() => {
+                  // refresh after deletion
+                  const refetch = async () => {
+                    try {
+                      const response = await getCourses();
+                      const allCourses = Array.isArray(response.data)
+                        ? response.data
+                        : (response.data?.results || []);
+                      const userCandidates = [];
+                      if (user) {
+                        if (user.id) userCandidates.push(String(user.id));
+                        if (user._id) userCandidates.push(String(user._id));
+                        if (user.username) userCandidates.push(String(user.username));
+                        if (user.email) userCandidates.push(String(user.email));
+                      }
+                      const isMyCourse = (course) => {
+                        if (!userCandidates.length) return false;
+                        if (course.instructor) {
+                          if (typeof course.instructor === 'object') {
+                            const instr = course.instructor;
+                            const vals = [instr.id, instr._id, instr.username, instr.email].filter(Boolean).map(String);
+                            if (vals.some(v => userCandidates.includes(v))) return true;
+                          } else if (typeof course.instructor === 'string' && userCandidates.includes(course.instructor)) {
+                            return true;
+                          }
+                        }
+                        const fallbackKeys = ['creator', 'created_by', 'instructor_id', 'user', 'author'];
+                        for (const k of fallbackKeys) {
+                          if (!course[k]) continue;
+                          if (typeof course[k] === 'object') {
+                            const vals = [course[k].id, course[k]._id, course[k].username, course[k].email].filter(Boolean).map(String);
+                            if (vals.some(v => userCandidates.includes(v))) return true;
+                          } else if (typeof course[k] === 'string' && userCandidates.includes(course[k])) {
+                            return true;
+                          }
+                        }
+                        return false;
+                      };
+                      const mine = allCourses.filter(isMyCourse);
+                      setInstructorCourses(mine);
+                    } catch (err) {
+                      console.error('Error refreshing courses after deletion:', err);
+                    }
+                  };
+                  refetch();
+                }}
+              />
             </div>
           </>
         )}
