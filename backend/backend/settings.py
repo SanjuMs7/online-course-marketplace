@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 """
 
 from pathlib import Path
+from decouple import config
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -20,10 +21,10 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-y5o&gu17a)6ik#4m9@f89%6pyf7d&4od189ww1z*vt^96nm6)#'
+SECRET_KEY = config('SECRET_KEY', default='django-insecure-y5o&gu17a)6ik#4m9@f89%6pyf7d&4od189ww1z*vt^96nm6)#')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = config('DEBUG', default=True, cast=bool)
 
 ALLOWED_HOSTS = []
 
@@ -97,11 +98,11 @@ WSGI_APPLICATION = 'backend.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'online_course_db',
-        'USER': 'postgres',
-        'PASSWORD': 'Sanju@2005',
-        'HOST': 'localhost',
-        'PORT': '5432',
+        'NAME': config('DB_NAME', default='online_course_db'),
+        'USER': config('DB_USER', default='postgres'),
+        'PASSWORD': config('DB_PASSWORD', default='Sanju@2005'),
+        'HOST': config('DB_HOST', default='localhost'),
+        'PORT': config('DB_PORT', default='5432'),
     }
 }
 
@@ -148,3 +149,7 @@ MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
 CORS_ALLOW_ALL_ORIGINS = True
+
+# Razorpay Configuration (Test Mode)
+RAZORPAY_KEY_ID = config('RAZORPAY_KEY_ID', default='rzp_test_your_key_id')
+RAZORPAY_KEY_SECRET = config('RAZORPAY_KEY_SECRET', default='your_test_secret_key')

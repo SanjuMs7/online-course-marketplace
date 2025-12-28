@@ -2,11 +2,14 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getCourses, enrollCourse } from '../api/courses';
 import Header from '../components/common/Header';
+import PaymentModal from '../components/payment/PaymentModal';
 
 export default function Courses() {
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [selectedCourse, setSelectedCourse] = useState(null);
   const navigate = useNavigate();
 
   const getThumbnailUrl = (thumbnailPath) => {
@@ -35,6 +38,16 @@ export default function Courses() {
   };
 
   const handleEnroll = async (courseId) => {
+    const course = courses.find(c => c.id === courseId);
+    
+    // If course is paid, show payment modal
+    if (course && Number(course.price) > 0) {
+      setSelectedCourse(course);
+      setShowPaymentModal(true);
+      return;
+    }
+
+    // For free courses, enroll directly
     try {
       await enrollCourse(courseId);
     } catch (err) {
@@ -55,6 +68,22 @@ export default function Courses() {
       }
     }
     navigate(`/courses/${courseId}/lessons/`);
+  };
+
+  const handlePaymentSuccess = async (courseId) => {
+    setShowPaymentModal(false);
+    setSelectedCourse(null);
+    
+    // Refresh courses to update enrollment status
+    await fetchCourses();
+    
+    // Navigate to course lessons
+    navigate(`/courses/${courseId}/lessons/`);
+  };
+
+  const handlePaymentClose = () => {
+    setShowPaymentModal(false);
+    setSelectedCourse(null);
   };
 
 
@@ -171,6 +200,14 @@ export default function Courses() {
             </article>
           ))}
         </div>
+      )}
+      
+      {showPaymentModal && selectedCourse && (
+        <PaymentModal
+          course={selectedCourse}
+          onClose={handlePaymentClose}
+          onSuccess={handlePaymentSuccess}
+        />
       )}
     </div>
     </>
