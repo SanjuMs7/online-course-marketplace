@@ -265,12 +265,11 @@ export default function Profile() {
                           <h3 className="text-lg font-semibold text-gray-900 mb-1 line-clamp-2">{course.title}</h3>
                           <p className="text-sm text-gray-600 mb-3 line-clamp-3">{course.description}</p>
 
-                          <div className="mt-auto">
+                          <div className="mt-auto pt-4">
                             <div className="flex items-center justify-between">
-                              <p className="text-xs text-gray-500">Instructor</p>
+                              <p className="text-sm text-gray-800">{(course.instructor)}</p>
                               <span className="text-sm font-semibold">{Number(course.price) === 0 ? 'Free' : `₹${course.price}`}</span>
                             </div>
-                            <p className="text-sm text-gray-800">{(course.instructor && course.instructor.username) || 'Instructor'}</p>
                           </div>
                         </div>
                       </div>
