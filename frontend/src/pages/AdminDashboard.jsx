@@ -130,10 +130,12 @@ export default function AdminDashboard() {
       <div className="flex items-start justify-between mb-6 gap-4">
         <div>
           <h2 className="text-2xl font-bold text-gray-900">Admin Dashboard</h2>
+          
           <p className="text-sm text-gray-600">Approve or reject courses submitted by instructors.</p>
         </div>
 
         <div className="flex items-center gap-3">
+          <button onClick={() => navigate('/profile')} type="button" className="px-6 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700">Profile</button>
           <button onClick={handleLogout} type="button" className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-400">Logout</button>
         </div>
       </div>

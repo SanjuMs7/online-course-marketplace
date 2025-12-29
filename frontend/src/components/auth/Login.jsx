@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import Header from '../common/Header';
 import { loginUser } from '../../api/auth';
+import Profile from '../../pages/Profile';
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -38,11 +39,11 @@ export default function Login() {
 
       // Redirect based on role
       if (data.user.role === 'STUDENT') {
-        navigate('/courses');
+        navigate('/profile');
       } else if (data.user.role === 'INSTRUCTOR') {
-        navigate('/instructor-dashboard');
+        navigate('/profile');
       } else if (data.user.role === 'ADMIN') {
-        navigate('/admin-dashboard');
+        navigate('/profile');
       }
 
     } catch (err) {

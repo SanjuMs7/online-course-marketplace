@@ -170,6 +170,14 @@ export default function Profile() {
                   Instructor Dashboard
                 </button>
               )}
+              {user.role === 'STUDENT' && (
+                <button 
+                  onClick={() => navigate('/courses')} 
+                  className="px-3 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700"
+                >
+                  View All Courses
+                </button>
+              )}
               <button onClick={handleLogout} className="px-3 py-2 bg-red-600 text-white rounded-md hover:bg-red-700">Logout</button>
             </div>
           </div>

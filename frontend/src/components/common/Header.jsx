@@ -59,39 +59,7 @@ export default function Header() {
         </div>
 
         <nav className="flex items-center gap-3">
-          {/* keep login/register buttons for convenience */}
-          {user ? (
-            <>
-              {/* <Link to="/profile" className="hidden sm:flex items-center gap-3" title={user.full_name || user.username || 'Account'}>
-                <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center text-sm font-medium text-gray-700 overflow-hidden">
-                  {user.avatar ? (
-                    <img src={user.avatar} alt={user.full_name || user.username} className="w-full h-full object-cover" />
-                  ) : (
-                    <span>{getInitials(user.full_name || user.username)}</span>
-                  )}
-                </div>
-                <span className="px-2 text-gray-700">{user.full_name || user.username || 'Account'}</span>
-              </Link>
-              <button onClick={handleLogout} className="px-4 py-2 rounded-md bg-red-600 text-white hover:bg-red-700">Logout</button> */}
-            </>
-          ) : (
-            <>
-              {/* <Link
-                to="/login"
-                className="px-4 py-2 rounded-md border border-indigo-600 text-indigo-600 hover:bg-indigo-600 hover:text-white transition"
-              >
-                Login
-              </Link>
-
-              <Link
-                to="/register"
-                className="px-4 py-2 rounded-md bg-indigo-600 text-white hover:bg-indigo-700 transition"
-              >
-                Register
-              </Link> */}
-            </>
-          )}
-
+          
           {/* Always-visible avatar button */}
           <div ref={menuRef} className="relative">
             <button
