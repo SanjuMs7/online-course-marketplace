@@ -1,7 +1,14 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import Header from '../components/common/Header';
-import { getLessons, getCourse, deleteLesson, getCourseProgress, setLessonCompletion } from '../api/courses';
+import {
+  getLessons,
+  getCourse,
+  deleteLesson,
+  getCourseProgress,
+  setLessonCompletion,
+} from '../api/courses';
+import CourseReviews from '../components/common/CourseReviews';
 
 export default function CourseLessons() {
   const { id } = useParams();
@@ -10,7 +17,9 @@ export default function CourseLessons() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [courseTitle, setCourseTitle] = useState('Course');
+  const [courseData, setCourseData] = useState(null);
   const [userRole, setUserRole] = useState('');
+  const [userId, setUserId] = useState(null);
   const [deleting, setDeleting] = useState(null);
   const [completedIds, setCompletedIds] = useState([]);
 
@@ -28,6 +37,7 @@ export default function CourseLessons() {
     try {
       user = JSON.parse(raw);
       setUserRole(user.role);
+      setUserId(user.id);
     } catch (e) {
       navigate('/login');
       return;
@@ -47,7 +57,10 @@ export default function CourseLessons() {
           getLessons(id)
         ]);
 
-        if (courseRes?.data?.title) setCourseTitle(courseRes.data.title);
+        if (courseRes?.data) {
+          setCourseData(courseRes.data);
+          if (courseRes.data.title) setCourseTitle(courseRes.data.title);
+        }
 
         const data = Array.isArray(lessonsRes.data) ? lessonsRes.data : (lessonsRes.data.results || []);
         setLessons(Array.isArray(data) ? data : []);
@@ -63,7 +76,7 @@ export default function CourseLessons() {
             console.error('Failed to load progress', e);
           }
         }
-        
+
         if (data.length === 0) {
           // Provide role-specific messaging
           if (user.role === 'STUDENT') {
@@ -225,6 +238,13 @@ export default function CourseLessons() {
             ))}
           </div>
         )}
+
+        <CourseReviews
+          courseId={id}
+          userId={userId}
+          userRole={userRole}
+          isEnrolled={!!courseData?.is_enrolled}
+        />
       </main>
     </>
   );

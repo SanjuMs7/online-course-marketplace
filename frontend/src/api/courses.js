@@ -14,6 +14,12 @@ export const getCourseProgress = (courseId) => API.get(`courses/${courseId}/prog
 export const setLessonCompletion = (lessonId, is_completed = true) =>
   API.post(`lessons/${lessonId}/complete/`, { is_completed });
 
+// Reviews
+export const getCourseReviews = (courseId) => API.get(`courses/${courseId}/reviews/`);
+export const createCourseReview = (courseId, payload) => API.post(`courses/${courseId}/reviews/`, payload);
+export const updateReview = (reviewId, payload) => API.patch(`reviews/${reviewId}/`, payload);
+export const deleteReview = (reviewId) => API.delete(`reviews/${reviewId}/`);
+
 // Lesson management (Instructor only)
 export const createLesson = (payload) => {
   const isFormData = typeof FormData !== 'undefined' && payload instanceof FormData;
