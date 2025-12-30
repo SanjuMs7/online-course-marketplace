@@ -165,9 +165,19 @@ class LessonCompleteView(APIView):
 
         # Get or create progress
         progress, created = LessonProgress.objects.get_or_create(student=user, lesson=lesson)
-        progress.is_completed = True
-        if not progress.completed_at:
-            progress.completed_at = timezone.now()
+
+        is_completed = request.data.get('is_completed', True)
+        # normalize to boolean
+        if isinstance(is_completed, str):
+            is_completed = is_completed.lower() in ['true', '1', 'yes', 'on']
+
+        progress.is_completed = bool(is_completed)
+        if progress.is_completed:
+            if not progress.completed_at:
+                progress.completed_at = timezone.now()
+        else:
+            progress.completed_at = None
+
         progress.save()
 
         serializer = LessonProgressSerializer(progress)

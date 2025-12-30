@@ -8,6 +8,8 @@ export default function Courses() {
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('ALL');
+  const [sortMode, setSortMode] = useState('NEWEST'); // NEWEST | TOP_RATED | TITLE | PRICE_ASC | PRICE_DESC
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [selectedCourse, setSelectedCourse] = useState(null);
   const navigate = useNavigate();
@@ -120,13 +122,38 @@ export default function Courses() {
   );
 
   const filteredCourses = courses.filter(course => {
-    if (!search.trim()) return true;
-    const query = search.toLowerCase();
-    return (
+    const query = search.trim().toLowerCase();
+    const matchesSearch = !query ||
       course.title.toLowerCase().includes(query) ||
-      course.description.toLowerCase().includes(query)
-    );
+      course.description.toLowerCase().includes(query);
+
+    const matchesCategory = selectedCategory === 'ALL' ||
+      (selectedCategory === 'Enrolled' ? course.is_enrolled : course.category === selectedCategory);
+
+    return matchesSearch && matchesCategory;
+  }).sort((a, b) => {
+    if (sortMode === 'TOP_RATED') {
+      const ar = Number(a.completion_rate ?? a.enrollment_count ?? 0);
+      const br = Number(b.completion_rate ?? b.enrollment_count ?? 0);
+      if (br !== ar) return br - ar;
+    }
+    if (sortMode === 'PRICE_ASC') {
+      return Number(a.price || 0) - Number(b.price || 0);
+    }
+    if (sortMode === 'PRICE_DESC') {
+      return Number(b.price || 0) - Number(a.price || 0);
+    }
+    if (sortMode === 'TITLE') {
+      return (a.title || '').localeCompare(b.title || '');
+    }
+    // NEWEST fallback uses created_at then id
+    const ad = a.created_at ? new Date(a.created_at).getTime() : 0;
+    const bd = b.created_at ? new Date(b.created_at).getTime() : 0;
+    if (bd !== ad) return bd - ad;
+    return (b.id || 0) - (a.id || 0);
   });
+
+  const categories = ['ALL', 'Enrolled', ...Array.from(new Set(courses.map(c => c.category).filter(Boolean)))];
 
   return (
     <>
@@ -139,7 +166,7 @@ export default function Courses() {
         </div>
       </div>
 
-      <div className="mb-6">
+      <div className="space-y-4 mb-6">
         <input
           type="text"
           value={search}
@@ -148,6 +175,37 @@ export default function Courses() {
           className="w-full px-4 py-3 rounded-lg border border-gray-200 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-400"
           aria-label="Search courses"
         />
+
+        <div className="flex flex-wrap items-center gap-3 justify-between">
+          <div className="flex flex-wrap items-center gap-2">
+            {categories.map((cat, idx) => (
+              <div key={cat} className="flex items-center gap-2">
+                <button
+                  onClick={() => setSelectedCategory(cat)}
+                  className={`px-3 py-1 rounded-full text-sm transition ${selectedCategory === cat ? 'text-indigo-600 font-semibold' : 'text-gray-700 hover:text-indigo-600'}`}
+                >
+                  {cat === 'ALL' ? 'All categories' : cat}
+                </button>
+                {idx < categories.length - 1 && <span className="text-gray-400 text-sm">|</span>}
+              </div>
+            ))}
+          </div>
+
+          <div className="flex flex-col gap-1 w-full md:w-auto md:min-w-[220px]">
+            <label className="text-xs font-semibold text-gray-600">Sort</label>
+            <select
+              value={sortMode}
+              onChange={(e) => setSortMode(e.target.value)}
+              className="w-full px-3 py-2 rounded border border-gray-200 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-400 text-sm"
+            >
+              <option value="NEWEST">Newest</option>
+              <option value="TOP_RATED">Top rated</option>
+              <option value="TITLE">Title A-Z</option>
+              <option value="PRICE_ASC">Price: Low to High</option>
+              <option value="PRICE_DESC">Price: High to Low</option>
+            </select>
+          </div>
+        </div>
       </div>
 
       {filteredCourses.length === 0 ? (

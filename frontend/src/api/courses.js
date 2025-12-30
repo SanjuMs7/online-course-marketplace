@@ -10,6 +10,9 @@ export const approveCourse = (courseId) =>
 export const enrollCourse = (courseId) =>
   API.post(`enrollments/`, { course: courseId }); // backend expects student from token
 export const getLessons = (courseId) => API.get(`courses/${courseId}/lessons/`);
+export const getCourseProgress = (courseId) => API.get(`courses/${courseId}/progress/`);
+export const setLessonCompletion = (lessonId, is_completed = true) =>
+  API.post(`lessons/${lessonId}/complete/`, { is_completed });
 
 // Lesson management (Instructor only)
 export const createLesson = (payload) => {

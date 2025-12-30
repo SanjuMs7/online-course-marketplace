@@ -4,6 +4,8 @@ from .models import Course, Enrollment, Lesson, LessonProgress
 class CourseSerializer(serializers.ModelSerializer):
     instructor = serializers.StringRelatedField(read_only=True)  # shows __str__ of user
     is_enrolled = serializers.SerializerMethodField()
+    enrollment_count = serializers.SerializerMethodField()
+    completion_rate = serializers.SerializerMethodField()
     
     class Meta:
         model = Course
@@ -19,6 +21,28 @@ class CourseSerializer(serializers.ModelSerializer):
                 course=obj
             ).exists()
         return False
+
+    def get_enrollment_count(self, obj):
+        return Enrollment.objects.filter(course=obj).count()
+
+    def get_completion_rate(self, obj):
+        """
+        Compute average lesson completion across enrolled students.
+        Formula: completed lesson progresses / (lesson_count * enrollment_count) * 100.
+        Returns an integer percentage or None when data is insufficient.
+        """
+        lesson_count = Lesson.objects.filter(course=obj).count()
+        enrollment_count = Enrollment.objects.filter(course=obj).count()
+        if lesson_count == 0 or enrollment_count == 0:
+            return None
+
+        total_slots = lesson_count * enrollment_count
+        completed = LessonProgress.objects.filter(
+            lesson__course=obj,
+            is_completed=True
+        ).count()
+
+        return round((completed / total_slots) * 100)
 
 class EnrollmentSerializer(serializers.ModelSerializer):
     class Meta:

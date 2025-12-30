@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import Header from '../components/common/Header';
-import { getLessons, getCourse, deleteLesson } from '../api/courses';
+import { getLessons, getCourse, deleteLesson, getCourseProgress, setLessonCompletion } from '../api/courses';
 
 export default function CourseLessons() {
   const { id } = useParams();
@@ -12,6 +12,11 @@ export default function CourseLessons() {
   const [courseTitle, setCourseTitle] = useState('Course');
   const [userRole, setUserRole] = useState('');
   const [deleting, setDeleting] = useState(null);
+  const [completedIds, setCompletedIds] = useState([]);
+
+  const totalLessons = lessons.length;
+  const completedCount = completedIds.length;
+  const progressPercent = totalLessons > 0 ? Math.round((completedCount / totalLessons) * 100) : 0;
 
   useEffect(() => {
     const raw = localStorage.getItem('user');
@@ -46,6 +51,18 @@ export default function CourseLessons() {
 
         const data = Array.isArray(lessonsRes.data) ? lessonsRes.data : (lessonsRes.data.results || []);
         setLessons(Array.isArray(data) ? data : []);
+
+        // load progress for students
+        if (user.role === 'STUDENT') {
+          try {
+            const progRes = await getCourseProgress(id);
+            const list = Array.isArray(progRes.data) ? progRes.data : (progRes.data.results || []);
+            const doneIds = list.filter(p => p.is_completed).map(p => p.lesson);
+            setCompletedIds(doneIds);
+          } catch (e) {
+            console.error('Failed to load progress', e);
+          }
+        }
         
         if (data.length === 0) {
           // Provide role-specific messaging
@@ -81,6 +98,7 @@ export default function CourseLessons() {
     try {
       await deleteLesson(lessonId);
       setLessons(lessons.filter((l) => l.id !== lessonId));
+      setCompletedIds(prev => prev.filter(id => id !== lessonId));
       alert('Lesson deleted successfully.');
     } catch (err) {
       console.error('Failed to delete lesson:', err);
@@ -110,6 +128,24 @@ export default function CourseLessons() {
           <p className="text-gray-600">Loading lessons...</p>
         )}
 
+        {userRole === 'STUDENT' && !loading && totalLessons > 0 && (
+          <div className="bg-gray-50 border border-gray-200 rounded p-4 flex items-center justify-between text-sm text-gray-700">
+            <div className="flex items-center gap-3">
+              <span className="font-semibold">Progress</span>
+              <span>
+                {completedCount}/{totalLessons} completed
+              </span>
+            </div>
+            <div className="flex-1 mx-4 h-2 bg-gray-200 rounded overflow-hidden" aria-label="Course progress bar">
+              <div
+                className="h-full bg-indigo-600 transition-all"
+                style={{ width: `${progressPercent}%` }}
+              />
+            </div>
+            <span className="text-xs text-gray-500">{progressPercent}%</span>
+          </div>
+        )}
+
         {!loading && error && (
           <p className="text-red-600 text-sm">{error}</p>
         )}
@@ -135,6 +171,32 @@ export default function CourseLessons() {
                 </div>
 
                 <div className="flex items-center gap-2 ml-4">
+                  {userRole === 'STUDENT' && (
+                    <label
+                      onClick={(e) => e.stopPropagation()}
+                      className="inline-flex items-center gap-2 text-sm text-gray-700"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={completedIds.includes(lesson.id)}
+                        onChange={async (e) => {
+                          const next = e.target.checked;
+                          try {
+                            await setLessonCompletion(lesson.id, next);
+                            setCompletedIds((prev) => {
+                              if (next) return [...new Set([...prev, lesson.id])];
+                              return prev.filter((idVal) => idVal !== lesson.id);
+                            });
+                          } catch (err) {
+                            console.error('Failed to update completion', err);
+                            alert('Could not update completion status');
+                          }
+                        }}
+                      />
+                      Mark complete
+                    </label>
+                  )}
+
                   {userRole === 'INSTRUCTOR' && (
                     <>
                       <button
@@ -157,20 +219,6 @@ export default function CourseLessons() {
                         {deleting === lesson.id ? 'Deleting...' : 'Delete'}
                       </button>
                     </>
-                  )}
-
-                  {lesson.video_url ? (
-                    <a
-                      href={lesson.video_url}
-                      target="_blank"
-                      rel="noreferrer"
-                      onClick={(e) => e.stopPropagation()}
-                      className="text-sm text-indigo-600 hover:underline whitespace-nowrap"
-                    >
-                      Open video
-                    </a>
-                  ) : (
-                    <span className="text-xs text-gray-400 whitespace-nowrap">No video link</span>
                   )}
                 </div>
               </article>

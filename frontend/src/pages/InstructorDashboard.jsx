@@ -4,6 +4,7 @@ import { getCourses, createCourse, createLesson } from '../api/courses';
 import Header from '../components/common/Header';
 import CreateCourseForm from '../components/instructor/CreateCourseForm';
 import CreateLessonForm from '../components/instructor/CreateLessonForm';
+import InstructorAnalytics from '../components/instructor/InstructorAnalytics';
 
 export default function InstructorDashboard() {
   const [courses, setCourses] = useState([]);
@@ -111,6 +112,7 @@ export default function InstructorDashboard() {
             </button>
           </div>
         </div>
+        <InstructorAnalytics courses={courses} loading={loading} />
 
         <div className="flex flex-col gap-6">
           <CreateCourseForm onCourseCreated={handleCourseCreated} />
