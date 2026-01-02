@@ -192,8 +192,11 @@ export default function CourseLessons() {
                       <input
                         type="checkbox"
                         checked={completedIds.includes(lesson.id)}
+                        disabled={completedIds.includes(lesson.id)}
                         onChange={async (e) => {
                           const next = e.target.checked;
+                          // If already completed (disabled), skip
+                          if (completedIds.includes(lesson.id)) return;
                           try {
                             await setLessonCompletion(lesson.id, next);
                             setCompletedIds((prev) => {
@@ -244,6 +247,8 @@ export default function CourseLessons() {
           userId={userId}
           userRole={userRole}
           isEnrolled={!!courseData?.is_enrolled}
+          totalLessons={totalLessons}
+          completedCount={completedCount}
         />
       </main>
     </>

@@ -191,8 +191,8 @@ export default function Courses() {
             ))}
           </div>
 
-          <div className="flex flex-col gap-1 w-full md:w-auto md:min-w-[220px]">
-            <label className="text-xs font-semibold text-gray-600">Sort</label>
+          <div className="flex items-center gap-1 w-full md:w-auto md:min-w-[220px]">
+            <label className="text-xs font-semibold text-gray-600">Sort: </label>
             <select
               value={sortMode}
               onChange={(e) => setSortMode(e.target.value)}

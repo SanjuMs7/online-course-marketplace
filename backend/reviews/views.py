@@ -2,7 +2,7 @@ from django.shortcuts import get_object_or_404
 from rest_framework import generics, permissions
 from rest_framework.exceptions import PermissionDenied
 
-from courses.models import Course, Enrollment
+from courses.models import Course, Enrollment, Lesson, LessonProgress
 from accounts.permissions import IsStudent
 from .models import Review
 from .serializers import ReviewSerializer
@@ -34,6 +34,17 @@ class CourseReviewListCreateView(generics.ListCreateAPIView):
 		# Only enrolled students can review
 		if not Enrollment.objects.filter(student=self.request.user, course=course).exists():
 			raise PermissionDenied("You must be enrolled to review this course.")
+
+		# Require all lessons completed before reviewing
+		lesson_count = Lesson.objects.filter(course=course).count()
+		completed_count = LessonProgress.objects.filter(
+			student=self.request.user,
+			lesson__course=course,
+			is_completed=True,
+		).count()
+
+		if lesson_count == 0 or completed_count < lesson_count:
+			raise PermissionDenied("Complete all lessons before submitting a review.")
 
 		serializer.save(student=self.request.user, course=course)
 

@@ -33,9 +33,12 @@ export default function Home() {
       .then(res => {
         const data = res.data;
         if (Array.isArray(data)) {
-          setCourses(data);
+          // Sort by enrollment_count descending for trending
+          const sorted = [...data].sort((a, b) => (b.enrollment_count || 0) - (a.enrollment_count || 0));
+          setCourses(sorted);
         } else if (data.results && Array.isArray(data.results)) {
-          setCourses(data.results);
+          const sorted = [...data.results].sort((a, b) => (b.enrollment_count || 0) - (a.enrollment_count || 0));
+          setCourses(sorted);
         } else {
           console.warn('Unexpected API response structure:', data);
         }
@@ -48,6 +51,8 @@ export default function Home() {
   const filtered = courses
     .filter(c => selectedCategory === 'All' || (c.category || '').includes(selectedCategory))
     .filter(c => c.title.toLowerCase().includes(search.trim().toLowerCase()) || c.description.toLowerCase().includes(search.trim().toLowerCase()));
+
+  const trendingCourses = [...courses].sort((a, b) => (b.enrollment_count || 0) - (a.enrollment_count || 0)).slice(0, 4);
 
   return (
     <>
@@ -82,7 +87,7 @@ export default function Home() {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {courses.slice(0, 4).map(course => (
+            {trendingCourses.map(course => (
               <Link key={course.id} to={`/courses?courseId=${course.id}`} onClick={(e) => handleCourseClick(e, course.id)}>
                 <article className="bg-white rounded-lg p-3 shadow-sm hover:shadow-lg transition flex flex-col cursor-pointer h-full">
                   <div className="h-36 rounded-md bg-gradient-to-r from-indigo-50 to-indigo-100 border border-indigo-200 mb-3 flex items-center justify-center overflow-hidden">
@@ -134,7 +139,7 @@ export default function Home() {
           </div>
         </section>
 
-        <section className="max-w-6xl mx-auto px-4 mt-8">
+        <section className="max-w-6xl mx-auto px-4 mt-10">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-2xl font-bold text-gray-900">Featured courses</h2>
             <Link to="/courses" className="text-indigo-600">Browse all</Link>

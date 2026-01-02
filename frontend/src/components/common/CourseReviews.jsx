@@ -9,7 +9,7 @@ import {
 /**
  * CourseReviews renders the review list and allows enrolled students to add/edit/delete their review.
  */
-export default function CourseReviews({ courseId, userId, userRole, isEnrolled }) {
+export default function CourseReviews({ courseId, userId, userRole, isEnrolled, totalLessons = 0, completedCount = 0 }) {
   const [reviews, setReviews] = useState([]);
   const [myReviewId, setMyReviewId] = useState(null);
   const [myRating, setMyRating] = useState(null); // null means no star selected yet
@@ -111,7 +111,8 @@ export default function CourseReviews({ courseId, userId, userRole, isEnrolled }
     ? (reviews.reduce((sum, r) => sum + Number(r.rating || 0), 0) / reviews.length).toFixed(1)
     : null;
 
-  const canReview = userRole === 'STUDENT' && isEnrolled;
+  const hasFinishedCourse = totalLessons > 0 && completedCount >= totalLessons;
+  const canReview = userRole === 'STUDENT' && isEnrolled && hasFinishedCourse;
   const hasReview = !!myReviewId;
 
   return (
@@ -225,6 +226,12 @@ export default function CourseReviews({ courseId, userId, userRole, isEnrolled }
             </button>
           </div>
         </form>
+      )}
+
+      {!canReview && userRole === 'STUDENT' && isEnrolled && (
+        <p className="text-xs text-gray-600 border-t border-gray-200 pt-3">
+          You need to complete all lessons before leaving a review.
+        </p>
       )}
     </section>
   );
