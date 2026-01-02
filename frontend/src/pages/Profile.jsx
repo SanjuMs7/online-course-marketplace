@@ -284,12 +284,12 @@ export default function Profile() {
         {user.role === 'INSTRUCTOR' && (
           <>
             <div className="mt-8 bg-white rounded-lg shadow p-6">
-              <h2 className="text-xl font-bold text-gray-900 mb-4">Earnings</h2>
+              {/* <h2 className="text-xl font-bold text-gray-900 mb-4">Earnings</h2> */}
               <InstructorEarnings />
             </div>
 
             <div className="mt-8 bg-white rounded-lg shadow p-6">
-              <h2 className="text-xl font-bold text-gray-900 mb-4">Your Courses</h2>
+              {/* <h2 className="text-xl font-bold text-gray-900 mb-4">Your Courses</h2> */}
               <CoursesList
                 courses={instructorCourses}
                 loading={loadingInstructorCourses}
