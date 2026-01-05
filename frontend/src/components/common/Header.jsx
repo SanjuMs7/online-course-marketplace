@@ -1,8 +1,10 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { useState, useEffect, useRef } from 'react';
+import { fetchCartItems } from '../../api/cart';
 
 export default function Header() {
   const [user, setUser] = useState(null);
+  const [cartCount, setCartCount] = useState(0);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -10,6 +12,35 @@ export default function Header() {
       const raw = localStorage.getItem('user');
       if (raw) setUser(JSON.parse(raw));
     } catch (e) { /* ignore */ }
+  }, []);
+
+  useEffect(() => {
+    const refreshCartCount = () => {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        setCartCount(0);
+        return;
+      }
+
+      fetchCartItems()
+        .then(res => {
+          if (Array.isArray(res.data)) {
+            setCartCount(res.data.length);
+          }
+        })
+        .catch(() => {
+          setCartCount(0);
+        });
+    };
+
+    refreshCartCount();
+
+    const handleCartChanged = () => refreshCartCount();
+    window.addEventListener('cart:changed', handleCartChanged);
+
+    return () => {
+      window.removeEventListener('cart:changed', handleCartChanged);
+    };
   }, []);
 
   function getInitials(name) {
@@ -47,6 +78,7 @@ export default function Header() {
     } catch (e) { /* ignore */ }
     setMenuOpen(false);
     setUser(null);
+    setCartCount(0);
     navigate('/login');
   }
 
@@ -59,7 +91,23 @@ export default function Header() {
         </div>
 
         <nav className="flex items-center gap-3">
-          
+          {user?.role === 'STUDENT' && (
+            <Link
+              to="/cart"
+              className="relative w-10 h-10 rounded-full bg-white border border-gray-200 flex items-center justify-center text-gray-700 hover:text-indigo-600 hover:border-indigo-300 shadow-sm"
+              aria-label="Cart"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="w-5 h-5">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437m0 0L6.3 13.5h10.95l1.05-6.75H5.106m.387 1.522h12.329M9 17.25a.75.75 0 11-1.5 0 .75.75 0 011.5 0zm8.25 0a.75.75 0 11-1.5 0 .75.75 0 011.5 0z" />
+              </svg>
+              {cartCount > 0 && (
+                <span className="absolute -top-1 -right-1 min-w-[1.4rem] h-5 px-1 rounded-full bg-red-500 text-white text-xs font-semibold flex items-center justify-center">
+                  {cartCount}
+                </span>
+              )}
+            </Link>
+          )}
+
           {/* Always-visible avatar button */}
           <div ref={menuRef} className="relative">
             <button

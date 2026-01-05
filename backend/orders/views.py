@@ -7,8 +7,8 @@ import razorpay
 import hmac
 import hashlib
 
-from .models import Order, Payment
-from .serializers import OrderSerializer, PaymentSerializer
+from .models import Order, Payment, CartItem
+from .serializers import OrderSerializer, PaymentSerializer, CartItemSerializer
 from courses.models import Course, Enrollment
 from accounts.permissions import IsStudent
 
@@ -16,6 +16,45 @@ from accounts.permissions import IsStudent
 def get_razorpay_client():
     """Get or create Razorpay client instance"""
     return razorpay.Client(auth=(settings.RAZORPAY_KEY_ID, settings.RAZORPAY_KEY_SECRET))
+
+
+@api_view(['GET', 'POST'])
+@permission_classes([IsAuthenticated, IsStudent])
+def cart_items(request):
+    """List or add cart items for the authenticated student"""
+    if request.method == 'GET':
+        items = CartItem.objects.filter(user=request.user).select_related('course', 'course__instructor')
+        serializer = CartItemSerializer(items, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    course_id = request.data.get('course_id')
+    if not course_id:
+        return Response({'error': 'Course ID is required'}, status=status.HTTP_400_BAD_REQUEST)
+
+    try:
+        course = Course.objects.get(id=course_id, is_approved=True)
+    except Course.DoesNotExist:
+        return Response({'error': 'Course not found'}, status=status.HTTP_404_NOT_FOUND)
+
+    if Enrollment.objects.filter(student=request.user, course=course).exists():
+        return Response({'error': 'Already enrolled in this course'}, status=status.HTTP_400_BAD_REQUEST)
+
+    item, created = CartItem.objects.get_or_create(user=request.user, course=course)
+    serializer = CartItemSerializer(item)
+    return Response(serializer.data, status=status.HTTP_201_CREATED if created else status.HTTP_200_OK)
+
+
+@api_view(['DELETE'])
+@permission_classes([IsAuthenticated, IsStudent])
+def remove_cart_item(request, course_id):
+    """Remove a course from the authenticated student's cart"""
+    try:
+        item = CartItem.objects.get(user=request.user, course_id=course_id)
+    except CartItem.DoesNotExist:
+        return Response({'error': 'Item not found in cart'}, status=status.HTTP_404_NOT_FOUND)
+
+    item.delete()
+    return Response({'message': 'Removed from cart'}, status=status.HTTP_200_OK)
 
 
 @api_view(['POST'])

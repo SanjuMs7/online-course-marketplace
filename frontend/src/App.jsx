@@ -10,6 +10,7 @@ import LessonEdit from './pages/LessonEdit';
 import InstructorDashboard from './pages/InstructorDashboard';
 import AdminDashboard from './pages/AdminDashboard';
 import Profile from './pages/Profile';
+import Cart from './pages/Cart';
 
 
 function App() {
@@ -26,6 +27,7 @@ function App() {
       <Route path="/courses/:courseId/lessons/:lessonId/edit" element={<LessonEdit />} />
       <Route path="/admin-dashboard" element={<AdminDashboard />} />
       <Route path="/profile" element={<Profile />} />
+      <Route path="/cart" element={<Cart />} />
     </Routes>
   );
 }

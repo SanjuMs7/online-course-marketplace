@@ -3,12 +3,15 @@ import { Link, useNavigate } from 'react-router-dom';
 import Header from '../components/common/Header';
 import Footer from '../components/common/Footer';
 import Testimonials from '../components/common/Testimonials';
+import HomeCourseCard from '../components/common/HomeCourseCard';
 import { getCourses } from '../api/courses';
+import { addCartItem, fetchCartItems, removeCartItem } from '../api/cart';
 
 export default function Home() {
   const [courses, setCourses] = useState([]);
   const [search, setSearch] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
+  const [cartIds, setCartIds] = useState([]);
   const navigate = useNavigate();
 
   const getThumbnailUrl = (thumbnailPath) => {
@@ -28,6 +31,38 @@ export default function Home() {
     }
   };
 
+  const emitCartChanged = () => {
+    window.dispatchEvent(new CustomEvent('cart:changed'));
+  };
+
+  const handleToggleCart = async (course) => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      navigate('/login');
+      alert('Please log in to add items to your cart.');
+      return;
+    }
+
+    const inCart = cartIds.includes(course.id);
+
+    try {
+      if (inCart) {
+        await removeCartItem(course.id);
+        setCartIds(prev => prev.filter(id => id !== course.id));
+        alert(`${course.title} removed from cart`);
+        emitCartChanged();
+      } else {
+        await addCartItem(course.id);
+        setCartIds(prev => (prev.includes(course.id) ? prev : [...prev, course.id]));
+        alert(`${course.title} added to cart`);
+        emitCartChanged();
+      }
+    } catch (error) {
+      const message = error?.response?.data?.error || 'Could not add to cart';
+      alert(message);
+    }
+  };
+
   useEffect(() => {
     getCourses()
       .then(res => {
@@ -44,6 +79,21 @@ export default function Home() {
         }
       })
       .catch(err => console.error('Error fetching courses:', err));
+  }, []);
+
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    fetchCartItems()
+      .then(res => {
+        if (Array.isArray(res.data)) {
+          setCartIds(res.data.map(item => item.course));
+        }
+      })
+      .catch(() => {
+        /* ignore cart fetch errors on home */
+      });
   }, []);
 
   const categories = ['All', 'Development', 'Business', 'Design', 'Marketing', 'Music'];
@@ -88,38 +138,15 @@ export default function Home() {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {trendingCourses.map(course => (
-              <Link key={course.id} to={`/courses?courseId=${course.id}`} onClick={(e) => handleCourseClick(e, course.id)}>
-                <article className="bg-white rounded-lg p-3 shadow-sm hover:shadow-lg transition flex flex-col cursor-pointer h-full">
-                  <div className="h-36 rounded-md bg-gradient-to-r from-indigo-50 to-indigo-100 border border-indigo-200 mb-3 flex items-center justify-center overflow-hidden">
-                    {course.thumbnail ? (
-                      <img 
-                        src={getThumbnailUrl(course.thumbnail)} 
-                        alt={course.title} 
-                        className="w-full h-full object-cover"
-                        onError={(e) => {
-                          e.target.style.display = 'none';
-                          e.target.parentElement.innerHTML = '<svg class="w-12 h-12 text-indigo-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 6.253v13m0-13C6.5 6.253 2 10.588 2 16s4.5 9.747 10 9.747 10-4.292 10-9.747c0-5.412-4.5-9.747-10-9.747z" /></svg>';
-                        }}
-                      />
-                    ) : (
-                      <svg className="w-12 h-12 text-indigo-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M12 6.253v13m0-13C6.5 6.253 2 10.588 2 16s4.5 9.747 10 9.747 10-4.292 10-9.747c0-5.412-4.5-9.747-10-9.747z" />
-                      </svg>
-                    )}
-                  </div>
-                  <div className="mb-2">
-                    <span className="inline-block text-xs bg-red-50 text-red-700 px-2 py-0.5 rounded-full font-semibold">Trending</span>
-                  </div>
-                  <h4 className="text-sm font-semibold text-gray-900">{course.title}</h4>
-                  <p className="text-xs text-gray-500">{(course.instructor && course.instructor.username) || 'Instructor'}</p>
-                  <p className="text-sm text-gray-700 mt-2 line-clamp-2">{course.description?.slice(0, 100)}{course.description?.length > 100 ? '...' : ''}</p>
-
-                  <div className="mt-auto flex items-center justify-between text-sm pt-3">
-                    <span className="inline-block text-xs bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded-full">{course.is_approved ? 'Approved' : 'Pending'}</span>
-                    <span className="font-semibold text-gray-900">{course.price > 0 ? `₹${course.price}` : 'Free'}</span>
-                  </div>
-                </article>
-              </Link>
+              <HomeCourseCard
+                key={course.id}
+                course={course}
+                handleCourseClick={handleCourseClick}
+                getThumbnailUrl={getThumbnailUrl}
+                isInCart={cartIds.includes(course.id)}
+                onAddToCart={handleToggleCart}
+                isTrending={true}
+              />
             ))}
           </div>
         </section>
@@ -147,31 +174,15 @@ export default function Home() {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {filtered.slice(0, 8).map(course => (
-              <Link key={course.id} to={`/courses?courseId=${course.id}`} onClick={(e) => handleCourseClick(e, course.id)}>
-                <article className="bg-white rounded-lg p-3 shadow-sm hover:shadow-lg transition flex flex-col cursor-pointer h-full">
-                  <div className="h-36 rounded-md bg-gradient-to-r from-indigo-50 to-white border border-gray-100 mb-3 flex items-center justify-center overflow-hidden">
-                    {course.thumbnail ? (
-                      <img 
-                        src={getThumbnailUrl(course.thumbnail)} 
-                        alt={course.title} 
-                        className="w-full h-full object-cover"
-                        onError={(e) => {
-                          e.target.style.display = 'none';
-                          e.target.parentElement.style.display = 'flex';
-                        }}
-                      />
-                    ) : null}
-                  </div>
-                  <h4 className="text-sm font-semibold text-gray-900">{course.title}</h4>
-                  <p className="text-xs text-gray-500">{(course.instructor && course.instructor.username) || 'Instructor'}</p>
-                  <p className="text-sm text-gray-700 mt-2 line-clamp-3">{course.description?.slice(0, 120)}{course.description?.length > 120 ? '...' : ''}</p>
-
-                  <div className="mt-auto flex items-center justify-between text-sm text-gray-700 pt-3">
-                    <span className="inline-block text-xs bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded-full">{course.is_approved ? 'Approved' : 'Pending'}</span>
-                    <span className="font-semibold">{course.price > 0? `₹${course.price}` : 'Free'}</span>
-                  </div>
-                </article>
-              </Link>
+              <HomeCourseCard
+                key={course.id}
+                course={course}
+                handleCourseClick={handleCourseClick}
+                getThumbnailUrl={getThumbnailUrl}
+                isInCart={cartIds.includes(course.id)}
+                onAddToCart={handleToggleCart}
+                isTrending={false}
+              />
             ))}
 
             {filtered.length === 0 && (

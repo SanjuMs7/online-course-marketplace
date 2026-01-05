@@ -3,6 +3,28 @@ from django.conf import settings
 from courses.models import Course
 
 
+class CartItem(models.Model):
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='cart_items'
+    )
+    course = models.ForeignKey(
+        Course,
+        on_delete=models.CASCADE,
+        related_name='cart_items'
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=['user', 'course'], name='unique_user_course_cart')
+        ]
+
+    def __str__(self):
+        return f"CartItem user={self.user_id} course={self.course_id}"
+
+
 class Order(models.Model):
     STATUS_CHOICES = [
         ('CREATED', 'Created'),
