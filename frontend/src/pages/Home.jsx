@@ -115,15 +115,22 @@ export default function Home() {
             <p className="text-gray-600 mt-4">Build in-demand skills and advance your career with online courses.</p>
 
             <form className="mt-6 flex flex-col sm:flex-row gap-3 items-center justify-center" onSubmit={e => e.preventDefault()}>
-              <input
-                aria-label="Search courses"
-                value={search}
-                onChange={e => setSearch(e.target.value)}
-                className="w-full sm:flex-1 px-4 py-3 rounded-lg border border-gray-200 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-400"
-                placeholder="Search for courses, e.g. React, Python, Excel"
-              />
+               <input
+                  type="text"
+                  value={search}
+                  onChange={e => setSearch(e.target.value)}
+                  placeholder="Search courses by title or description..."
+                  className="w-full px-4 py-3 rounded-lg border border-gray-200 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                  aria-label="Search courses"
+                />
 
-              <Link to={`/courses?search=${encodeURIComponent(search)}`} className="w-full sm:w-auto inline-flex items-center px-4 py-3 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 transition justify-center">Search</Link>
+              <button 
+                type="button" 
+                onClick={() => document.getElementById('featured-courses')?.scrollIntoView({ behavior: 'smooth' })}
+                className="w-full sm:w-auto inline-flex items-center px-4 py-3 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 transition justify-center"
+              >
+                Search
+              </button>
             </form>
 
             <div className="mt-4 text-sm text-gray-500 text-center">Learn in-demand skills with expert instructors — enroll now.</div>
@@ -166,7 +173,7 @@ export default function Home() {
           </div>
         </section>
 
-        <section className="max-w-6xl mx-auto px-4 mt-10">
+        <section id="featured-courses" className="max-w-6xl mx-auto px-4 mt-10">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-2xl font-bold text-gray-900">Featured courses</h2>
             <Link to="/courses" className="text-indigo-600">Browse all</Link>

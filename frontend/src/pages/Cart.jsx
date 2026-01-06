@@ -138,8 +138,8 @@ export default function Cart() {
         )}
 
         {!loading && items.length > 0 && (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div className="lg:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="space-y-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {items.map(item => {
                 const course = { ...item.course_details, id: item.course };
                 return (
@@ -157,7 +157,7 @@ export default function Cart() {
               })}
             </div>
 
-            <aside className="bg-white rounded-lg shadow-sm p-4 border h-fit">
+            <div className="bg-white rounded-lg shadow-sm p-6 border w-full">
               <h2 className="text-lg font-semibold text-gray-900 mb-3">Summary</h2>
               <div className="flex items-center justify-between text-sm text-gray-700 mb-2">
                 <span>Items</span>
@@ -172,9 +172,9 @@ export default function Cart() {
                 disabled={items.length === 0}
                 onClick={handleCheckout}
               >
-                Proceed to checkout
+                Checkout Each courses 
               </button>
-            </aside>
+            </div>
           </div>
         )}
       </main>

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getCourses, enrollCourse } from '../api/courses';
+import { addCartItem, fetchCartItems, removeCartItem } from '../api/cart';
 import Header from '../components/common/Header';
 import PaymentModal from '../components/payment/PaymentModal';
 
@@ -12,6 +13,7 @@ export default function Courses() {
   const [sortMode, setSortMode] = useState('NEWEST'); // NEWEST | TOP_RATED | TITLE | PRICE_ASC | PRICE_DESC
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [selectedCourse, setSelectedCourse] = useState(null);
+  const [cartIds, setCartIds] = useState([]);
   const navigate = useNavigate();
 
   const getThumbnailUrl = (thumbnailPath) => {
@@ -94,6 +96,39 @@ export default function Courses() {
     setSelectedCourse(null);
   };
 
+  const emitCartChanged = () => {
+    window.dispatchEvent(new CustomEvent('cart:changed'));
+  };
+
+  const handleToggleCart = async (e, course) => {
+    e.stopPropagation();
+    const token = localStorage.getItem('token');
+    if (!token) {
+      navigate('/login');
+      alert('Please log in to add items to your cart.');
+      return;
+    }
+
+    const inCart = cartIds.includes(course.id);
+
+    try {
+      if (inCart) {
+        await removeCartItem(course.id);
+        setCartIds(prev => prev.filter(id => id !== course.id));
+        alert(`${course.title} removed from cart`);
+        emitCartChanged();
+      } else {
+        await addCartItem(course.id);
+        setCartIds(prev => (prev.includes(course.id) ? prev : [...prev, course.id]));
+        alert(`${course.title} added to cart`);
+        emitCartChanged();
+      }
+    } catch (error) {
+      const message = error?.response?.data?.error || 'Could not update cart';
+      alert(message);
+    }
+  };
+
 
   useEffect(() => {
     const raw = localStorage.getItem('user');
@@ -114,6 +149,21 @@ export default function Courses() {
 
     fetchCourses();
   }, [navigate]);
+
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    fetchCartItems()
+      .then(res => {
+        if (Array.isArray(res.data)) {
+          setCartIds(res.data.map(item => item.course));
+        }
+      })
+      .catch(() => {
+        /* ignore cart fetch errors */
+      });
+  }, []);
 
   if (loading) return (
     <div className="max-w-6xl mx-auto px-4 py-8">
@@ -218,6 +268,22 @@ export default function Courses() {
                 <div className="absolute top-2 right-2 z-10 bg-green-500 text-white px-3 py-1 rounded-full text-xs font-semibold shadow-md">
                   Enrolled
                 </div>
+              )}
+              {!course.is_enrolled && (
+                <button
+                  type="button"
+                  aria-label="Add to cart"
+                  className={`absolute top-2 left-2 z-10 inline-flex items-center justify-center w-9 h-9 rounded-full border shadow-sm transition ${
+                    cartIds.includes(course.id)
+                      ? 'bg-red-100 border-red-200 text-red-600'
+                      : 'bg-white/90 border-gray-200 hover:bg-red-50 hover:text-red-600'
+                  }`}
+                  onClick={(e) => handleToggleCart(e, course)}
+                >
+                  <svg className="w-5 h-5" fill={cartIds.includes(course.id) ? 'currentColor' : 'none'} stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M12 21s-6.5-4.35-9-9A5.25 5.25 0 0 1 7.5 3 5.5 5.5 0 0 1 12 5.25 5.5 5.5 0 0 1 16.5 3 5.25 5.25 0 0 1 21 12c-2.5 4.65-9 9-9 9Z" />
+                  </svg>
+                </button>
               )}
               <div className="h-40 bg-gradient-to-r from-indigo-50 to-white border-b border-gray-100">
                 {course.thumbnail ? (
